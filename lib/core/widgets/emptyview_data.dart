@@ -1,34 +1,53 @@
 import 'package:flutter/material.dart';
 
 class EmptyView extends StatelessWidget {
-  const EmptyView();
+
+  final String title;
+  final String message;
+  final IconData icon;
+
+  const EmptyView({
+    super.key,
+    this.title = "لا يوجد بيانات",
+    this.message = "عند توفر بيانات ستظهر هنا",
+    this.icon = Icons.inbox_outlined,
+  });
 
   @override
   Widget build(BuildContext context) {
+
+    final theme = Theme.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
+
             Icon(
-              Icons.receipt_long_outlined,
+              icon,
               size: 70,
-              color: Colors.grey,
+              color: theme.disabledColor,
             ),
-            SizedBox(height: 16),
+
+            const SizedBox(height: 16),
+
             Text(
-              "لا يوجد بيانات",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8),
+
+            const SizedBox(height: 8),
+
             Text(
-              "عند توفر بيانات ستظهر هنا",
+              message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.disabledColor,
+              ),
             ),
           ],
         ),
