@@ -18,15 +18,32 @@ Future<void> setup() async {
 
 
 
-  // ///Auth
-  // sl.registerLazySingleton<AuthRemoteDataSource>(
-  //   () => AuthRemoteDataSourceImpl(sl()),
+  ///Auth
+   sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(sl()),
+  );
+ 
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl()),
+  );
+ 
+  sl.registerLazySingleton<LoginUseCase>(
+    () => LoginUseCase(sl()),
+  );
+ 
+  // sl.registerLazySingleton<LogoutUseCase>(
+  //   () => LogoutUseCase(sl()),
   // );
-  // sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
-  // sl.registerLazySingleton(() => LoginUseCase(sl()));
-  // sl.registerFactory(() => LoginCubit(sl(), sl()));
-  // sl.registerLazySingleton(() => LogoutUseCase(sl()));
-  // sl.registerFactory(() => AppCubit(sl(),sl()));
+ 
+  // AppCubit — singleton so main.dart can access it via sl<AppCubit>()
+  sl.registerLazySingleton<AppCubit>(
+    () => AppCubit(sl()),
+  );
+ 
+  // LoginCubit — factory so each login screen gets a fresh instance
+  sl.registerFactory<LoginCubit>(
+    () => LoginCubit(sl()),
+  );
 
 
 }
