@@ -14,11 +14,24 @@ class SecureStorageService {
   Future<void> deleteToken() async {
     await _storage.delete(key: 'token');
   }
-  // Future<void> saveUserRole(String role) async {
-  //   await _storage.write(key: 'role', value: role);
-  // }
+   Future<void> saveRefreshToken(
+    String refreshToken,
+  ) async {
+    await _storage.write(
+      key: 'refreshToken',
+      value: refreshToken,
+    );
+  }
 
-  // Future<String?> getUserRole() async {
-  //   return await _storage.read(key: 'role');
-  // }
+  Future<String?> getRefreshToken() async {
+    return await _storage.read(
+      key: 'refreshToken',
+    );
+  }
+
+  Future<void> deleteRefreshToken() async {
+    await _storage.delete(
+      key: 'refreshToken',
+    );
+  }
 }

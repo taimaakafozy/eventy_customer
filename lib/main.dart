@@ -30,7 +30,9 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
-        BlocProvider(create: (_) => sl<AppCubit>()..checkAuth()),
+       BlocProvider(
+  create: (_) => sl<AppCubit>()..checkAuth(),
+),
 
       ],
       child: const _AppView(),

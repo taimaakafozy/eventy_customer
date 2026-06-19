@@ -12,7 +12,6 @@ class AppContentContainer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(1),
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 400),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 10),
         decoration: BoxDecoration(

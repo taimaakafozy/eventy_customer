@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/layout/presentation/pages/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,10 +10,26 @@ import '../cubit/bottom_navigation_cubit.dart';
 class MainLayout extends StatelessWidget {
   const MainLayout({super.key});
 
+//   static const List<Widget> _pages = [
+//   Scaffold(
+//     body: Center(
+//       child: Text("HOME"),
+//     ),
+//   ),
+
+//   Scaffold(
+//     body: Center(
+//       child: Text("DASHBOARD"),
+//     ),
+//   ),
+
+//   SettingsPage(),
+// ];
+
   static const List<Widget> _pages = [
     // HomePage(),
     // DashboardPage() ,
-    // SettingsPage(),
+    SettingsPage(),
 
 
   ];

@@ -1,9 +1,19 @@
+import 'package:eventy_customer/features/auth/domain/usecases/logout_use_case.dart';
+import 'package:eventy_customer/features/auth/domain/usecases/register_usecase.dart';
+import 'package:eventy_customer/features/auth/domain/usecases/request_reset_password_usecase.dart';
+import 'package:eventy_customer/features/auth/domain/usecases/resend_otp_usecase.dart';
+import 'package:eventy_customer/features/auth/domain/usecases/reset_password_usecase.dart';
+import 'package:eventy_customer/features/auth/domain/usecases/verify_otp_usecase.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/register_cubit.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/request_reset_password_cubit.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/resend_otp_cubit.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/reset_password_cubit.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/verify_otp_cubit.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
-import '../../features/auth/domain/usecases/logout_use_case.dart';
 import '../../features/auth/presentation/blocs/app_cubit.dart';
 import '../../features/auth/presentation/blocs/login_cubit.dart';
 import '../network/dio_client.dart';
@@ -14,7 +24,7 @@ final sl = GetIt.instance;
 Future<void> setup() async {
   sl.registerLazySingleton(() => SecureStorageService());
 
-  sl.registerLazySingleton(() => DioClient(sl()));
+sl.registerLazySingleton(() => DioClient(sl()));
 
 
 
@@ -30,20 +40,68 @@ Future<void> setup() async {
   sl.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(sl()),
   );
+
+  sl.registerLazySingleton<RegisterUsecase>(
+    () => RegisterUsecase(sl()),
+  );
+ sl.registerLazySingleton<VerifyOtpUsecase>(
+    () => VerifyOtpUsecase(sl()),
+  );
+
+  sl.registerLazySingleton<ResendOtpUsecase>(
+    () => ResendOtpUsecase(sl()),
+  );
+
+  sl.registerLazySingleton<LogoutUseCase>(
+    () => LogoutUseCase(sl()),
+  );
+  sl.registerLazySingleton<RequestResetPasswordUseCase>(
+  () => RequestResetPasswordUseCase(sl()),
+);
+
+sl.registerLazySingleton<ResetPasswordUseCase>(
+  () => ResetPasswordUseCase(sl()),
+);
  
-  // sl.registerLazySingleton<LogoutUseCase>(
-  //   () => LogoutUseCase(sl()),
-  // );
- 
-  // AppCubit — singleton so main.dart can access it via sl<AppCubit>()
   sl.registerLazySingleton<AppCubit>(
-    () => AppCubit(sl()),
+    () => AppCubit(sl(), sl()),
   );
  
-  // LoginCubit — factory so each login screen gets a fresh instance
   sl.registerFactory<LoginCubit>(
-    () => LoginCubit(sl()),
+    () => LoginCubit(
+      sl(),
+      sl(),
+    ),
   );
+
+  sl.registerFactory<RegisterCubit>(
+    () => RegisterCubit(
+      sl(),
+    ),
+  );
+  sl.registerFactory<VerifyOtpCubit>(
+    () => VerifyOtpCubit(
+      sl(),
+      sl(),
+    ),
+  );
+  sl.registerFactory<ResendOtpCubit>(
+    () => ResendOtpCubit(
+      sl(),
+    ),
+  );
+
+  sl.registerFactory<RequestResetPasswordCubit>(
+  () => RequestResetPasswordCubit(
+    sl(),
+  ),
+);
+sl.registerFactory<ResetPasswordCubit>(
+  () => ResetPasswordCubit(
+    sl(),
+    sl(),
+  ),
+);
 
 
 }

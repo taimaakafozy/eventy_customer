@@ -61,7 +61,6 @@ class _SplashPageState extends State<SplashPage>
     // final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      
       // backgroundColor: isDark ? AppColors.splashDark : AppColors.splashLight,
       body: BackgroundWidget(
         image: AppAssets.DarkBackground,
@@ -74,9 +73,9 @@ class _SplashPageState extends State<SplashPage>
                 scale: _scaleAnim,
                 child: FadeTransition(opacity: _fadeAnim, child: AppLogo()),
               ),
-        
+
               const SizedBox(height: 28),
-        
+
               // Tagline fades in after logo
               FadeTransition(
                 opacity: _taglineFade,
