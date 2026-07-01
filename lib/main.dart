@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/layout/presentation/pages/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,7 +12,6 @@ import 'features/auth/presentation/pages/AppRoot.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
 
   await setup();
 
@@ -30,10 +30,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
-       BlocProvider(
-  create: (_) => sl<AppCubit>()..checkAuth(),
-),
-
+        BlocProvider(create: (_) => sl<AppCubit>()..checkAuth()),
       ],
       child: const _AppView(),
     );
@@ -50,8 +47,8 @@ class _AppView extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
 
-          locale: const Locale('ar'),
-          supportedLocales: const [Locale('ar')],
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('ar')],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -61,18 +58,23 @@ class _AppView extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
+          builder: (context, child) {
+            return ResponsiveBreakpoints.builder(
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: child!,
+              ),
+              breakpoints: const [
+                Breakpoint(start: 0, end: 450, name: MOBILE),
+                Breakpoint(start: 451, end: 800, name: TABLET),
+                Breakpoint(start: 801, end: 1920, name: DESKTOP),
+              ],
+            );
+          },
 
-          builder: (context, child) => ResponsiveBreakpoints.builder(
-            child: child!,
-            breakpoints: const [
-              Breakpoint(start: 0, end: 450, name: MOBILE),
-              Breakpoint(start: 451, end: 800, name: TABLET),
-              Breakpoint(start: 801, end: 1920, name: DESKTOP),
-            ],
-          ),
-
-
-          home: const AppRoot(),
+          home: 
+          // const MainLayout(),
+           const AppRoot(),
         );
       },
     );

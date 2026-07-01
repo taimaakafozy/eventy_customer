@@ -6,7 +6,6 @@ class AppTheme {
     brightness: Brightness.light,
 
     primaryColor: AppColors.primary,
-
     scaffoldBackgroundColor: AppColors.lightBackground,
 
     cardColor: AppColors.grey,

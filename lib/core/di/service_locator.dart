@@ -9,6 +9,15 @@ import 'package:eventy_customer/features/auth/presentation/blocs/request_reset_p
 import 'package:eventy_customer/features/auth/presentation/blocs/resend_otp_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/reset_password_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/verify_otp_cubit.dart';
+import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
+import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
+import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
+import 'package:eventy_customer/features/services/domain/usecases/get_available_services_usecase.dart';
+import 'package:eventy_customer/features/services/domain/usecases/get_service_details_usecase.dart';
+import 'package:eventy_customer/features/services/domain/usecases/get_service_types_usecase.dart';
+import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
+import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
+import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -103,6 +112,44 @@ sl.registerFactory<ResetPasswordCubit>(
   ),
 );
 
+  /// Services
+
+  sl.registerLazySingleton<ServiceRemoteDataSource>(
+    () => ServiceRemoteDataSourceImpl(sl()),
+  );
+
+  sl.registerLazySingleton<ServiceRepository>(
+    () => ServiceRepositoryImpl(sl()),
+  );
+
+  sl.registerLazySingleton<GetServiceTypesUseCase>(
+    () => GetServiceTypesUseCase(sl()),
+  );
+
+  sl.registerFactory<ServiceTypesCubit>(
+    () => ServiceTypesCubit(
+      sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetAvailableServicesUseCase>(
+  () => GetAvailableServicesUseCase(sl()),
+);
+sl.registerFactory<AvailableServicesCubit>(
+  () => AvailableServicesCubit(sl()),
+);
+
+sl.registerLazySingleton(
+  () => GetServiceDetailsUseCase(
+    sl<ServiceRepository>(),
+  ),
+);
+
+sl.registerFactory(
+  () => ServiceDetailsCubit(
+    sl<GetServiceDetailsUseCase>(),
+  ),
+);
 
 }
 

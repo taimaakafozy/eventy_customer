@@ -13,11 +13,6 @@ class AppColors {
   static const Color purpleText = Color(0xFF533372);
   static const Color goldText = Color(0xFFac8056);
 
-  // // Splash
-  // static const Color splashLight = Color(0xFFF8F5FC);
-
-  // static const Color splashDark = Color(0xFF0F0B14);
-
   // Glow
   static const Color glow = Color(0xFFac8056);
 
