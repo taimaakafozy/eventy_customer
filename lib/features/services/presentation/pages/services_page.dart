@@ -1,11 +1,14 @@
+import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/utils/service_type_helper.dart';
 import 'package:eventy_customer/core/widgets/app_search_field.dart';
 import 'package:eventy_customer/core/widgets/primary_filter_chip.dart';
 import 'package:eventy_customer/features/services/data/models/service_type_model.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_state.dart';
+import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_state.dart';
+import 'package:eventy_customer/features/services/presentation/pages/service_details_page.dart';
 import 'package:eventy_customer/features/services/presentation/widgets/services/service_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -240,9 +243,17 @@ void initState() {
                           ),
                           child: ServiceCard(
                             service: service,
-                            onTap: () {
-                              // Service Details
-                            },
+                           onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute( 
+      builder: (_) => BlocProvider(
+        create: (_) => sl<ServiceDetailsCubit>(),  
+        child: ServiceDetailsPage(serviceId: service.id),
+      ),
+    ),
+  );
+},
                           ),
                         );
                       },

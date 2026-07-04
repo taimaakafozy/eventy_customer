@@ -11,9 +11,7 @@ class ServiceDetailsResponseModel {
     required this.data,
   });
 
-  factory ServiceDetailsResponseModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ServiceDetailsResponseModel.fromJson(Map<String, dynamic> json) {
     return ServiceDetailsResponseModel(
       success: json["success"],
       statusCode: json["statusCode"],
@@ -27,44 +25,33 @@ class ServiceDetailsModel {
   final String id;
   final String providerId;
   final String serviceTypeId;
-
   final String description;
-
   final double rating;
   final int totalReviews;
-
   final String approvalStatus;
-
   final bool isCompleted;
   final bool isPackaged;
-
   final double? latitude;
   final double? longitude;
   final String? locationName;
-
   final double? price;
   final int? minCapacity;
   final int? maxCapacity;
-
   final String? serviceLogo;
   final String? businessFile;
-
   final DateTime createdAt;
   final DateTime updatedAt;
-
   final ServiceTypeInfo serviceType;
-
   final List<ServiceFile> files;
-
   final List<AvailabilityModel> availability;
-
   final List<SubServiceModel> subServices;
-
   final ProviderModel provider;
-
   final List<EventTypeModel> eventTypes;
-
   final MetaModel meta;
+
+  /// ⚠️ اختياري — بانتظار تأكيد شكل الـ Response من الباك اند لحالة
+  /// الصالة المرتبطة بباكج خدمات (Hall + Partnered Services)
+  final List<PackageServiceModel>? packageServices;
 
   ServiceDetailsModel({
     required this.id,
@@ -93,128 +80,145 @@ class ServiceDetailsModel {
     required this.provider,
     required this.eventTypes,
     required this.meta,
+    this.packageServices,
   });
 
-  factory ServiceDetailsModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ServiceDetailsModel.fromJson(Map<String, dynamic> json) {
     return ServiceDetailsModel(
       id: json["id"],
       providerId: json["providerId"],
       serviceTypeId: json["serviceTypeId"],
       description: json["description"] ?? "",
-
       rating: (json["rating"] ?? 0).toDouble(),
       totalReviews: json["totalReviews"] ?? 0,
-
       approvalStatus: json["approvalStatus"],
-
       isCompleted: json["isCompleted"] ?? false,
       isPackaged: json["isPackaged"] ?? false,
-
       latitude: json["latitude"]?.toDouble(),
       longitude: json["longitude"]?.toDouble(),
       locationName: json["locationName"],
-
       price: json["price"]?.toDouble(),
       minCapacity: json["minCapacity"],
       maxCapacity: json["maxCapacity"],
-
       serviceLogo: json["serviceLogo"],
       businessFile: json["businessFile"],
-
       createdAt: DateTime.parse(json["createdAt"]),
       updatedAt: DateTime.parse(json["updatedAt"]),
-
-      serviceType: ServiceTypeInfo.fromJson(
-        json["serviceType"],
-      ),
-
-      files: (json["files"] as List)
+      serviceType: ServiceTypeInfo.fromJson(json["serviceType"]),
+      files: (json["files"] as List? ?? [])
           .map((e) => ServiceFile.fromJson(e))
           .toList(),
-
-      availability: (json["availability"] as List)
+      availability: (json["availability"] as List? ?? [])
           .map((e) => AvailabilityModel.fromJson(e))
           .toList(),
-
-      subServices: (json["subServices"] as List)
+      subServices: (json["subServices"] as List? ?? [])
           .map((e) => SubServiceModel.fromJson(e))
           .toList(),
-
-      provider: ProviderModel.fromJson(
-        json["provider"],
-      ),
-
-      eventTypes: (json["eventTypes"] as List)
+      provider: ProviderModel.fromJson(json["provider"]),
+      eventTypes: (json["eventTypes"] as List? ?? [])
           .map((e) => EventTypeModel.fromJson(e))
           .toList(),
-
-      meta: MetaModel.fromJson(
-        json["meta"],
-      ),
+      meta: MetaModel.fromJson(json["meta"]),
+      // ⚠️ اسم الحقل التالي (packageServices) افتراضي — عدّليه لما يتأكد
+      // اسمه الحقيقي من الباك اند
+      packageServices: json["packageServices"] != null
+          ? (json["packageServices"] as List)
+              .map((e) => PackageServiceModel.fromJson(e))
+              .toList()
+          : null,
     );
   }
 
   bool get hasImages => files.isNotEmpty;
 
-String? get mainImage =>
-    files.isNotEmpty ? files.first.url : null;
+  String? get mainImage => files.isNotEmpty ? files.first.fileUrl : null;
 
-bool get hasPrice => price != null;
+  bool get hasPrice => price != null;
 
-bool get hasLocation =>
-    locationName != null &&
-    locationName!.trim().isNotEmpty;
+  bool get hasLocation =>
+      locationName != null && locationName!.trim().isNotEmpty;
 
-String get formattedRating =>
-    rating.toStringAsFixed(1);
+  bool get hasCapacity => minCapacity != null || maxCapacity != null;
+
+  bool get isActive => approvalStatus.toUpperCase() == "ACTIVE";
+
+  bool get hasPackageServices =>
+      isPackaged && packageServices != null && packageServices!.isNotEmpty;
+
+  String get capacityLabel {
+    if (minCapacity != null && maxCapacity != null) {
+      return "$minCapacity – $maxCapacity guests";
+    }
+    if (maxCapacity != null) return "Up to $maxCapacity guests";
+    if (minCapacity != null) return "From $minCapacity guests";
+    return "";
+  }
+
+  String get formattedRating => rating.toStringAsFixed(1);
 }
 
 class ServiceTypeInfo {
   final String name;
 
-  ServiceTypeInfo({
-    required this.name,
-  });
+  ServiceTypeInfo({required this.name});
 
-  factory ServiceTypeInfo.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    return ServiceTypeInfo(
-      name: json["name"],
-    );
+  factory ServiceTypeInfo.fromJson(Map<String, dynamic> json) {
+    return ServiceTypeInfo(name: json["name"]);
   }
 }
+
+/// ==========================
+/// Service Files (images/videos)
+/// ==========================
+enum ServiceFileType { image, video, unknown }
 
 class ServiceFile {
-  final String url;
+  final String id;
+  final String fileUrl;
+  final ServiceFileType fileType;
+  final String? publicId;
 
   ServiceFile({
-    required this.url,
+    required this.id,
+    required this.fileUrl,
+    required this.fileType,
+    this.publicId,
   });
 
-  factory ServiceFile.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ServiceFile.fromJson(Map<String, dynamic> json) {
     return ServiceFile(
-      url: json["url"] ?? "",
+      id: json["id"] ?? "",
+      fileUrl: json["fileUrl"] ?? json["url"] ?? "",
+      fileType: _parseType(json["fileType"]),
+      publicId: json["publicId"],
     );
   }
+
+  static ServiceFileType _parseType(String? raw) {
+    switch ((raw ?? "").toUpperCase()) {
+      case "IMAGE":
+        return ServiceFileType.image;
+      case "VIDEO":
+        return ServiceFileType.video;
+      default:
+        return ServiceFileType.unknown;
+    }
+  }
+
+  bool get isVideo => fileType == ServiceFileType.video;
+  bool get isImage => fileType == ServiceFileType.image;
 }
 
+/// ==========================
+/// Availability (كما هي)
+/// ==========================
 class AvailabilityModel {
   final String id;
-
   final String workFromTime;
   final String workToTime;
-
   final int capacity;
-
   final bool hasSlots;
-
   final List<WorkingDayModel> workingDays;
-
   final List<TimeSlotModel> timeSlots;
 
   AvailabilityModel({
@@ -227,24 +231,16 @@ class AvailabilityModel {
     required this.timeSlots,
   });
 
-  factory AvailabilityModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory AvailabilityModel.fromJson(Map<String, dynamic> json) {
     return AvailabilityModel(
       id: json["id"],
-
       workFromTime: json["workFromTime"],
-
       workToTime: json["workToTime"],
-
       capacity: json["capacity"] ?? 0,
-
       hasSlots: json["hasSlots"] ?? false,
-
       workingDays: (json["workingDays"] as List)
           .map((e) => WorkingDayModel.fromJson(e))
           .toList(),
-
       timeSlots: (json["timeSlots"] as List)
           .map((e) => TimeSlotModel.fromJson(e))
           .toList(),
@@ -255,25 +251,17 @@ class AvailabilityModel {
 class WorkingDayModel {
   final String dayOfWeek;
 
-  WorkingDayModel({
-    required this.dayOfWeek,
-  });
+  WorkingDayModel({required this.dayOfWeek});
 
-  factory WorkingDayModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    return WorkingDayModel(
-      dayOfWeek: json["dayOfWeek"],
-    );
+  factory WorkingDayModel.fromJson(Map<String, dynamic> json) {
+    return WorkingDayModel(dayOfWeek: json["dayOfWeek"]);
   }
 }
 
 class TimeSlotModel {
   final String id;
-
   final String fromTime;
   final String toTime;
-
   final int capacity;
 
   TimeSlotModel({
@@ -283,9 +271,7 @@ class TimeSlotModel {
     required this.capacity,
   });
 
-  factory TimeSlotModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory TimeSlotModel.fromJson(Map<String, dynamic> json) {
     return TimeSlotModel(
       id: json["id"],
       fromTime: json["fromTime"],
@@ -295,20 +281,38 @@ class TimeSlotModel {
   }
 }
 
+/// ==========================
+/// Sub Services + their media
+/// ==========================
+class SubServiceMedia {
+  final String id;
+  final String url;
+  final ServiceFileType type;
+
+  SubServiceMedia({
+    required this.id,
+    required this.url,
+    required this.type,
+  });
+
+  factory SubServiceMedia.fromJson(Map<String, dynamic> json) {
+    return SubServiceMedia(
+      id: json["id"] ?? "",
+      url: json["url"] ?? "",
+      type: ServiceFile._parseType(json["type"]),
+    );
+  }
+}
+
 class SubServiceModel {
   final String id;
-
   final String name;
-
   final String description;
-
   final double pricePerUnit;
-
   final String unitType;
-
   final int dailyCapacity;
-
   final bool isAvailable;
+  final List<SubServiceMedia> media;
 
   SubServiceModel({
     required this.id,
@@ -318,39 +322,35 @@ class SubServiceModel {
     required this.unitType,
     required this.dailyCapacity,
     required this.isAvailable,
+    required this.media,
   });
 
-  factory SubServiceModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory SubServiceModel.fromJson(Map<String, dynamic> json) {
     return SubServiceModel(
       id: json["id"],
-
       name: json["name"],
-
       description: json["description"] ?? "",
-
-      pricePerUnit:
-          (json["pricePerUnit"] ?? 0).toDouble(),
-
+      pricePerUnit: (json["pricePerUnit"] ?? 0).toDouble(),
       unitType: json["unitType"] ?? "",
-
       dailyCapacity: json["dailyCapacity"] ?? 0,
-
       isAvailable: json["isAvailable"] ?? false,
+      media: (json["media"] as List? ?? [])
+          .map((e) => SubServiceMedia.fromJson(e))
+          .toList(),
     );
   }
+
+  String? get thumbnailUrl => media.isNotEmpty ? media.first.url : null;
 }
 
+/// ==========================
+/// Provider
+/// ==========================
 class ProviderModel {
   final String id;
-
   final String businessName;
-
   final String description;
-
   final String approvalStatus;
-
   final ProviderUserModel user;
 
   ProviderModel({
@@ -361,32 +361,21 @@ class ProviderModel {
     required this.user,
   });
 
-  factory ProviderModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ProviderModel.fromJson(Map<String, dynamic> json) {
     return ProviderModel(
       id: json["id"],
-
       businessName: json["businessName"],
-
       description: json["description"] ?? "",
-
       approvalStatus: json["approvalStatus"],
-
-      user: ProviderUserModel.fromJson(
-        json["user"],
-      ),
+      user: ProviderUserModel.fromJson(json["user"]),
     );
   }
 }
 
 class ProviderUserModel {
   final String fullName;
-
   final String phoneNumber;
-
   final String? profileImage;
-
   final String? locationName;
 
   ProviderUserModel({
@@ -396,9 +385,7 @@ class ProviderUserModel {
     this.locationName,
   });
 
-  factory ProviderUserModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ProviderUserModel.fromJson(Map<String, dynamic> json) {
     return ProviderUserModel(
       fullName: json["fullName"] ?? "",
       phoneNumber: json["phoneNumber"] ?? "",
@@ -411,16 +398,10 @@ class ProviderUserModel {
 class EventTypeModel {
   final String eventType;
 
-  EventTypeModel({
-    required this.eventType,
-  });
+  EventTypeModel({required this.eventType});
 
-  factory EventTypeModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    return EventTypeModel(
-      eventType: json["eventType"],
-    );
+  factory EventTypeModel.fromJson(Map<String, dynamic> json) {
+    return EventTypeModel(eventType: json["eventType"]);
   }
 }
 
@@ -428,21 +409,12 @@ class MetaModel {
   final PaginationModel files;
   final PaginationModel subServices;
 
-  MetaModel({
-    required this.files,
-    required this.subServices,
-  });
+  MetaModel({required this.files, required this.subServices});
 
-  factory MetaModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory MetaModel.fromJson(Map<String, dynamic> json) {
     return MetaModel(
-      files: PaginationModel.fromJson(
-        json["files"],
-      ),
-      subServices: PaginationModel.fromJson(
-        json["subServices"],
-      ),
+      files: PaginationModel.fromJson(json["files"]),
+      subServices: PaginationModel.fromJson(json["subServices"]),
     );
   }
 }
@@ -460,14 +432,43 @@ class PaginationModel {
     required this.totalPages,
   });
 
-  factory PaginationModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory PaginationModel.fromJson(Map<String, dynamic> json) {
     return PaginationModel(
       total: json["total"] ?? 0,
       page: json["page"] ?? 1,
       limit: json["limit"] ?? 10,
       totalPages: json["totalPages"] ?? 1,
+    );
+  }
+}
+
+/// ==========================
+/// ⚠️ Package Services (Hall + Partnered Services)
+/// شكل مبدئي بانتظار تأكيد الـ Response الحقيقي من الباك اند
+/// ==========================
+class PackageServiceModel {
+  final String id;
+  final String name;
+  final String? logo;
+  final String serviceTypeName;
+  final double? fromPrice;
+
+  PackageServiceModel({
+    required this.id,
+    required this.name,
+    this.logo,
+    required this.serviceTypeName,
+    this.fromPrice,
+  });
+
+  factory PackageServiceModel.fromJson(Map<String, dynamic> json) {
+    return PackageServiceModel(
+      id: json["id"] ?? "",
+      name: json["name"] ?? json["businessName"] ?? "",
+      logo: json["logo"] ?? json["serviceLogo"],
+      serviceTypeName:
+          json["serviceType"]?["name"] ?? json["serviceTypeName"] ?? "",
+      fromPrice: json["price"]?.toDouble(),
     );
   }
 }

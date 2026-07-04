@@ -9,6 +9,11 @@ import 'package:eventy_customer/features/auth/presentation/blocs/request_reset_p
 import 'package:eventy_customer/features/auth/presentation/blocs/resend_otp_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/reset_password_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/verify_otp_cubit.dart';
+import 'package:eventy_customer/features/events/data/datasource/event_remote_datasource.dart';
+import 'package:eventy_customer/features/events/data/repository/event_repository_impl.dart';
+import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
+import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
 import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
 import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
 import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
@@ -151,5 +156,28 @@ sl.registerFactory(
   ),
 );
 
+/// Events
+sl.registerLazySingleton<EventRemoteDataSource>(
+  () => EventRemoteDataSourceImpl(
+    sl(),
+  ),
+);
+
+sl.registerLazySingleton<EventRepository>(
+  () => EventRepositoryImpl(
+    sl(),
+  ),
+);
+
+sl.registerLazySingleton(
+  () => CreateEventUseCase(
+    sl(),
+  ),
+);
+sl.registerFactory(
+  () => EventCubit(
+    sl(),
+  ),
+);
 }
 

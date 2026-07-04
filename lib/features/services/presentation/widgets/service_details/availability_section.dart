@@ -1,4 +1,4 @@
-import 'package:eventy_customer/core/theme/app_colors.dart';
+import 'package:eventy_customer/core/utils/week_day_helper.dart';
 import 'package:eventy_customer/features/services/data/models/service_details_model.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +16,10 @@ class AvailabilitySection extends StatelessWidget {
 
     return Column(
       children: availability.map((item) {
+        /// عندما تتوفر Time Slots محددة، لا داعي لعرض
+        /// وقت الدوام الكلي أو السعة الإجمالية — الـ Slots هي المصدر الوحيد للمعلومة
+        final bool showGeneralInfo = !item.hasSlots;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 18),
           padding: const EdgeInsets.all(18),
@@ -24,7 +28,7 @@ class AvailabilitySection extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(.04),
+                color: theme.shadowColor.withOpacity(.04),
                 blurRadius: 14,
                 offset: const Offset(0, 5),
               ),
@@ -33,87 +37,81 @@ class AvailabilitySection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              /// Working Hours
-
-              Row(
-                children: [
-
-                  const Icon(
-                    Icons.access_time_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Text(
-                    "${item.workFromTime} - ${item.workToTime}",
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              /// ==========================
+              /// General working hours + capacity
+              /// (تظهر فقط عندما لا توجد Time Slots محددة)
+              /// ==========================
+              if (showGeneralInfo) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: theme.primaryColor,
+                      size: 20,
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "${item.workFromTime} - ${item.workToTime}",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              /// Capacity
+                Row(
+                  children: [
+                    Icon(
+                      Icons.groups_rounded,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Capacity : ${item.capacity}",
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
 
-              Row(
-                children: [
+                const SizedBox(height: 18),
+              ],
 
-                  const Icon(
-                    Icons.groups_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Text(
-                    "Capacity : ${item.capacity}",
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-
-              /// Working Days
-
+              /// ==========================
+              /// Working Days (يظهر دائماً)
+              /// ==========================
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: item.workingDays.map((day) {
-
                   return Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(.08),
+                      color: theme.primaryColor.withOpacity(.08),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Text(
-                      _formatDay(day.dayOfWeek),
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      WeekDayHelper.displayName(day.dayOfWeek),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   );
-
                 }).toList(),
               ),
 
-              if (item.timeSlots.isNotEmpty) ...[
-
+              /// ==========================
+              /// Time Slots (تظهر فقط عند hasSlots == true)
+              /// ==========================
+              if (item.hasSlots && item.timeSlots.isNotEmpty) ...[
                 const SizedBox(height: 22),
-
-                const Divider(),
-
+                Divider(color: theme.dividerColor),
                 const SizedBox(height: 16),
 
                 Text(
@@ -125,80 +123,53 @@ class AvailabilitySection extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                ...item.timeSlots.map(
-                  (slot) {
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(.05),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-
-                          const Icon(
-                            Icons.schedule,
-                            color: AppColors.primary,
+                ...item.timeSlots.map((slot) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(.05),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          color: theme.primaryColor,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "${slot.fromTime} → ${slot.toTime}",
+                            style: theme.textTheme.bodyMedium,
                           ),
-
-                          const SizedBox(width: 10),
-
-                          Expanded(
-                            child: Text(
-                              "${slot.fromTime} → ${slot.toTime}",
-                              style: theme.textTheme.bodyMedium,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withOpacity(.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "Capacity: ${slot.capacity}",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.primaryColor,
                             ),
                           ),
-
-                          Text(
-                            "${slot.capacity}",
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                  },
-                ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ],
           ),
         );
       }).toList(),
     );
-  }
-
-  String _formatDay(String day) {
-
-    switch (day) {
-
-      case "SUNDAY":
-        return "Sunday";
-
-      case "MONDAY":
-        return "Monday";
-
-      case "TUESDAY":
-        return "Tuesday";
-
-      case "WEDNESDAY":
-        return "Wednesday";
-
-      case "THURSDAY":
-        return "Thursday";
-
-      case "FRIDAY":
-        return "Friday";
-
-      case "SATURDAY":
-        return "Saturday";
-
-      default:
-        return day;
-    }
   }
 }
