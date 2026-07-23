@@ -1,5 +1,7 @@
 import 'package:eventy_customer/core/theme/app_colors.dart';
 import 'package:eventy_customer/core/utils/service_type_helper.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_state.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_state.dart';
 import 'package:eventy_customer/features/services/presentation/widgets/service_details/availability_section.dart';
@@ -13,8 +15,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
   final String serviceId;
+  final bool selectable;
 
-  const ServiceDetailsPage({super.key, required this.serviceId});
+  const ServiceDetailsPage({
+    super.key,
+    required this.serviceId,
+    this.selectable = false,
+  });
 
   @override
   State<ServiceDetailsPage> createState() => _ServiceDetailsPageState();
@@ -28,7 +35,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
       context.read<ServiceDetailsCubit>().loadService(widget.serviceId);
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -39,7 +46,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
         builder: (context, state) {
           if (state is ServiceDetailsLoading ||
               state is ServiceDetailsInitial) {
-            return const Center(child: CircularProgressIndicator()); 
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is ServiceDetailsError) {
@@ -365,27 +372,69 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           const SizedBox(height: 30),
                         ],
 
-                        /// Sub Services (read-only)
+                        /// Sub Services
                         if (service.subServices.isNotEmpty) ...[
                           Text(
-                            "Available Services",
+                            widget.selectable
+                                ? "Select Services"
+                                : "Available Services",
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            "You'll be able to select these when booking",
+                            widget.selectable
+                                ? "Choose what you need and set the quantity"
+                                : "You'll be able to select these when booking",
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withOpacity(
                                 .55,
                               ),
-                            ),
+                            ), 
                           ),
                           const SizedBox(height: 16),
-                          ...service.subServices.map(
-                            (s) => SubServiceCard(subService: s),
-                          ),
+                          if (widget.selectable)
+                            BlocBuilder<
+                              EventBuilderCubit,
+                              Map<String, SelectedService>
+                            >(
+                              builder: (context, selections) {
+                                final serviceSelections =
+                                    selections[service.id]?.subServices ?? {};
+
+                                return Column(
+                                  children: service.subServices.map((s) {
+                                    final selectedSub = serviceSelections[s.id];
+
+                                    return SubServiceCard(
+                                      subService: s,
+                                      selectable: true,
+                                      isSelected: selectedSub != null,
+                                      quantity: selectedSub?.quantity ?? 1,
+                                      onToggle: () => context
+                                          .read<EventBuilderCubit>()
+                                          .toggleSubService(
+                                            serviceId: service.id,
+                                            serviceName:
+                                                service.provider.businessName,
+                                            subServiceId: s.id,
+                                            subServiceName: s.name,
+                                            pricePerUnit: s.pricePerUnit,
+                                            unitType: s.unitType,
+                                          ),
+                                      onQuantityChanged: (q) => context
+                                          .read<EventBuilderCubit>()
+                                          .setQuantity(service.id, s.id, q),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            )
+                          else
+                            ...service.subServices.map(
+                              (s) => SubServiceCard(subService: s),
+                            ),
                           const SizedBox(height: 34),
                         ],
 
@@ -499,15 +548,40 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
             builder: (context, state) {
               if (state is! ServiceDetailsLoaded) return const SizedBox();
 
-              return SafeArea(
-                minimum: const EdgeInsets.all(18),
-                child: SizedBox(
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: () => BookingChoiceSheet.show(context),
-                    child: const Text("Book Now"),
+              if (!widget.selectable) {
+                return SafeArea(
+                  minimum: const EdgeInsets.all(18),
+                  child: SizedBox(
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: () => BookingChoiceSheet.show(context),
+                      child: const Text("Book Now"),
+                    ),
                   ),
-                ),
+                );
+              }
+
+              return BlocBuilder<
+                EventBuilderCubit,
+                Map<String, SelectedService>
+              >(
+                builder: (context, selections) {
+                  final count =
+                      selections[state.service.id]?.subServices.length ?? 0;
+
+                  return SafeArea(
+                    minimum: const EdgeInsets.all(18),
+                    child: SizedBox(
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          count > 0 ? "Done ($count selected)" : "Done",
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

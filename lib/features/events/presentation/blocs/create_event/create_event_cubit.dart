@@ -7,29 +7,18 @@ import '../../../domain/usecases/create_event_usecase.dart';
 class EventCubit extends Cubit<EventState> {
   final CreateEventUseCase createEventUseCase;
 
-  EventCubit(
-    this.createEventUseCase,
-  ) : super(EventInitial());
+  EventCubit(this.createEventUseCase) : super(EventInitial());
 
-  Future<void> createEvent(
-    CreateEventRequest request,
-  ) async {
+  Future<void> createEvent(CreateEventRequest request) async {
     emit(EventLoading());
 
     try {
-      await createEventUseCase(
-        request,
-      );
-
-      emit(
-        EventSuccess(),
-      );
+      final response = await createEventUseCase(request);
+      emit(EventSuccess(response));
     } catch (e) {
-      emit(
-        EventError(
-          e.toString(),
-        ),
-      );
+      emit(EventError(e.toString().replaceFirst('Exception: ', '')));
     }
   }
+
+  void reset() => emit(EventInitial());
 }

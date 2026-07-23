@@ -1,5 +1,7 @@
 import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/widgets/app_search_field.dart';
+import 'package:eventy_customer/features/events/presentation/pages/create_event_page.dart';
+import 'package:eventy_customer/features/home/presentation/widgets/Create_Event_Card.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/categories/categories_section.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/hero_banner/hero_banner.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/home_header.dart';
@@ -22,19 +24,25 @@ class HomePage extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              /// Header
-              HomeHeader(),
-              SizedBox(height: 10),
-
-              /// Search
-              AppSearchField(hintText: "Search events..."),
-              SizedBox(height: 15),
-
-              /// Hero Banner
-              const HeroBanner(),
+              const HomeHeader(),
               const SizedBox(height: 10),
+              const AppSearchField(hintText: "Search events..."),
+              const SizedBox(height: 15),
+              const HeroBanner(),
+              const SizedBox(height: 18),
 
-              /// Categories
+              /// Create Event CTA
+              CreateEventCard(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateEventPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 22),
+
               BlocProvider(
                 create: (_) => sl<ServiceTypesCubit>(),
                 child: const CategoriesSection(),
@@ -50,3 +58,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+

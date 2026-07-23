@@ -69,7 +69,7 @@ Future<AvailableServicesResponseModel> getAvailableServices({
   final response = await client.dio.get(
     'services/available',
     queryParameters: query,
-  );
+  );  
 
   final data = response.data;
 

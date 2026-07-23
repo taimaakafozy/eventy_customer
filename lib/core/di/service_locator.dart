@@ -14,6 +14,7 @@ import 'package:eventy_customer/features/events/data/repository/event_repository
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
 import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
 import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
 import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
 import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
@@ -179,5 +180,7 @@ sl.registerFactory(
     sl(),
   ),
 );
+
+sl.registerFactory<EventBuilderCubit>(() => EventBuilderCubit());
 }
 
