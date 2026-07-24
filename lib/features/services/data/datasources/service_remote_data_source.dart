@@ -16,6 +16,7 @@ String? type,    int page = 1,
   int filesLimit = 5,
   int subsPage = 1,
   int subsLimit = 10,
+   String? date,
 });
 }
 
@@ -85,35 +86,37 @@ Future<AvailableServicesResponseModel> getAvailableServices({
   );
 }
 
-@override
-Future<ServiceDetailsResponseModel> getServiceDetails({
-  required String id,
-  int filesPage = 1,
-  int filesLimit = 5,
-  int subsPage = 1,
-  int subsLimit = 10,
-}) async {
-
-  final response = await client.dio.get(
-    'services/$id',
-    queryParameters: {
+ @override
+  Future<ServiceDetailsResponseModel> getServiceDetails({
+    required String id,
+    int filesPage = 1,
+    int filesLimit = 5,
+    int subsPage = 1,
+    int subsLimit = 10,
+    String? date,
+  }) async {
+    /// ⚠️ Map<String, dynamic> لأن date نص وباقي الحقول أرقام
+    final query = <String, dynamic>{
       'filesPage': filesPage,
       'filesLimit': filesLimit,
       'subsPage': subsPage,
       'subsLimit': subsLimit,
-    },
-  );
+    };
 
-  final data = response.data;
+    /// date يُرسل فقط أثناء إنشاء/تعديل مناسبة — التصفح العادي بدون date
+    /// يرجع التوفر الأسبوعي الكامل كما هو متوقع
+    if (date != null && date.isNotEmpty) {
+      query['date'] = date;
+    }
 
-  if (data['success'] != true) {
-    throw Exception(
-      data['message'] ??
-          'Failed to load service details',
-    );
+    final response = await client.dio.get('services/$id', queryParameters: query);
+    final data = response.data;
+
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to load service details');
+    }
+
+    return ServiceDetailsResponseModel.fromJson(data);
   }
-
-  return ServiceDetailsResponseModel.fromJson(data);
-}
   
 }

@@ -35,6 +35,7 @@ Future<ServiceDetailsResponseModel> getServiceDetails({
   int filesLimit = 5,
   int subsPage = 1,
   int subsLimit = 10,
+  String? date,
 }) {
   return remote.getServiceDetails(
     id: id,
@@ -42,6 +43,7 @@ Future<ServiceDetailsResponseModel> getServiceDetails({
     filesLimit: filesLimit,
     subsPage: subsPage,
     subsLimit: subsLimit,
+    date: date,
   );
 }
 }

@@ -13,6 +13,7 @@ class GetServiceDetailsUseCase {
     int filesLimit = 5,
     int subsPage = 1,
     int subsLimit = 10,
+    String? date,
   }) {
     return repository.getServiceDetails(
       id: id,
@@ -20,6 +21,7 @@ class GetServiceDetailsUseCase {
       filesLimit: filesLimit,
       subsPage: subsPage,
       subsLimit: subsLimit,
+      date: date,
     );
   }
 }

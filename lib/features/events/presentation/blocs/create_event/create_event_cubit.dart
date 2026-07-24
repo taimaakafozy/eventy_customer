@@ -17,6 +17,7 @@ class EventCubit extends Cubit<EventState> {
       emit(EventSuccess(response));
     } catch (e) {
       emit(EventError(e.toString().replaceFirst('Exception: ', '')));
+      print('Error creating event: $e'); 
     }
   }
 

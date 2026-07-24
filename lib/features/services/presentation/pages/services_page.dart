@@ -22,8 +22,9 @@ class ServicesPage extends StatefulWidget {
   /// عند true: الصفحة تُستخدم داخل رحلة إنشاء/تعديل مناسبة — يجب أن يكون
   /// EventBuilderCubit متوفراً بالـ context (يُمرَّر من الصفحة المستدعية).
   final bool selectionMode;
+  final DateTime? eventDate;
 
-  const ServicesPage({super.key, this.selectedType, this.selectionMode = false});
+  const ServicesPage({super.key, this.selectedType, this.selectionMode = false,this.eventDate,});
 
   @override
   State<ServicesPage> createState() => _ServicesPageState();
@@ -73,7 +74,7 @@ class _ServicesPageState extends State<ServicesPage> {
             BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
             if (eventBuilderCubit != null) BlocProvider.value(value: eventBuilderCubit),
           ],
-          child: ServiceDetailsPage(serviceId: serviceId, selectable: widget.selectionMode),
+          child: ServiceDetailsPage(serviceId: serviceId, selectable: widget.selectionMode , eventDate: widget.eventDate,),
         ),
       ),
     );

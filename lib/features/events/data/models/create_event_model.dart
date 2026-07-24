@@ -75,19 +75,13 @@ class CreateEventResponse {
   final CreatedEvent event;
   final List<CreatedBooking> bookings;
 
-  CreateEventResponse({
-    required this.event,
-    required this.bookings,
-  });
+  CreateEventResponse({required this.event, required this.bookings});
 
   factory CreateEventResponse.fromJson(Map<String, dynamic> json) {
     final data = json["data"];
-
     return CreateEventResponse(
       event: CreatedEvent.fromJson(data["event"]),
-      bookings: (data["bookings"] as List)
-          .map((e) => CreatedBooking.fromJson(e))
-          .toList(),
+      bookings: (data["bookings"] as List).map((e) => CreatedBooking.fromJson(e)).toList(),
     );
   }
 }
@@ -157,9 +151,7 @@ class CreatedBooking {
       eventId: json["eventId"],
       totalAmount: (json["totalAmount"] as num).toDouble(),
       status: json["status"],
-      items: (json["items"] as List)
-          .map((e) => CreatedBookingItem.fromJson(e))
-          .toList(),
+      items: (json["items"] as List).map((e) => CreatedBookingItem.fromJson(e)).toList(),
     );
   }
 }

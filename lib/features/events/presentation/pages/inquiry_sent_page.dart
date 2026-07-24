@@ -3,15 +3,16 @@ import 'package:eventy_customer/core/widgets/primary_button.dart';
 import 'package:eventy_customer/features/events/data/models/create_event_model.dart';
 import 'package:flutter/material.dart';
 
-class EventCreatedSuccessPage extends StatelessWidget {
+class InquirySentPage extends StatelessWidget {
   final CreateEventResponse response;
 
-  const EventCreatedSuccessPage({super.key, required this.response});
+  const InquirySentPage({super.key, required this.response});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final event = response.event;
+    final estimatedTotal = response.bookings.fold(0.0, (sum, b) => sum + b.totalAmount);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -24,22 +25,17 @@ class EventCreatedSuccessPage extends StatelessWidget {
               Container(
                 width: 84,
                 height: 84,
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.hourglass_top_rounded, color: theme.primaryColor, size: 40),
+                decoration: BoxDecoration(color: theme.primaryColor.withOpacity(.12), shape: BoxShape.circle),
+                child: Icon(Icons.mark_email_read_rounded, color: theme.primaryColor, size: 40),
               ),
               const SizedBox(height: 20),
-              Text("Event Created! ⏳",
+              Text("Inquiry Sent! 📩",
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(
-                "Your bookings were submitted. Payment will be processed after all providers accept.",
+                "We've received your event details. Our providers will review your request and send you exact pricing within 24 hours.",
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(.65),
-                ),
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.65)),
               ),
               const SizedBox(height: 26),
               Container(
@@ -49,17 +45,13 @@ class EventCreatedSuccessPage extends StatelessWidget {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(.04),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5)),
+                    BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 14, offset: const Offset(0, 5)),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Event Info",
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text("Event Info", style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     _row(theme, "Name", event.name),
                     _row(theme, "Date",
@@ -78,17 +70,13 @@ class EventCreatedSuccessPage extends StatelessWidget {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(.04),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5)),
+                    BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 14, offset: const Offset(0, 5)),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Bookings",
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text("Requested Services", style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     ...response.bookings.map((b) {
                       return Padding(
@@ -96,12 +84,11 @@ class EventCreatedSuccessPage extends StatelessWidget {
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text("Booking #${b.id.substring(0, 8)}",
+                              child: Text("Service #${b.serviceId.substring(0, 8)}",
                                   style: theme.textTheme.bodySmall),
                             ),
-                            Text("\$${b.totalAmount.toStringAsFixed(0)}",
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(fontWeight: FontWeight.w700)),
+                            Text("~\$${b.totalAmount.toStringAsFixed(0)}",
+                                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(width: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -110,7 +97,7 @@ class EventCreatedSuccessPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                b.status,
+                                "Pending Review",
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.w700,
@@ -122,6 +109,25 @@ class EventCreatedSuccessPage extends StatelessWidget {
                         ),
                       );
                     }),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Estimated Total",
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                        Text("~\$${estimatedTotal.toStringAsFixed(0)}",
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(color: theme.primaryColor, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Final pricing will be confirmed by providers",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(.5),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -144,12 +150,10 @@ class EventCreatedSuccessPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.6))),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.6))),
           Expanded(
             child: Text(value,
-                textAlign: TextAlign.end,
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
+                textAlign: TextAlign.end, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
           ),
         ],
       ),

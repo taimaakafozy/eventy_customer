@@ -15,9 +15,17 @@ class AppTheme {
     fontFamily: 'Cairo',
 
     bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: AppColors.cardLight,
+      // backgroundColor: AppColors.cardLight,
+      backgroundColor: AppColors.grey,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+
+    dialogTheme: const DialogThemeData(
+      backgroundColor: AppColors.grey, // نفس لون cardColor — معتم بالكامل
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
     ),
 
@@ -149,6 +157,11 @@ class AppTheme {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
     ),
+
+    dialogTheme: const DialogThemeData(
+  backgroundColor: AppColors.cardDark,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+),
 
     appBarTheme: const AppBarTheme(
       elevation: 0,

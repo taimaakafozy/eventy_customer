@@ -16,5 +16,6 @@ Future<ServiceDetailsResponseModel> getServiceDetails({
     int filesLimit,
     int subsPage,
     int subsLimit,
+    String? date,
   });
 }

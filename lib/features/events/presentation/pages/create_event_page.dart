@@ -8,12 +8,13 @@ import 'package:eventy_customer/features/events/data/models/create_event_model.d
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_state.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
-import 'package:eventy_customer/features/events/presentation/pages/event_created_success_page.dart';
+import 'package:eventy_customer/features/events/presentation/pages/inquiry_sent_page.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/event_services_summary.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/event_step_indicator.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/event_type_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:latlong2/latlong.dart';
 
 /// طبقة خارجية: مسؤوليتها الوحيدة توفير الـ Providers.
 /// هذا يضمن أن أي context تحتها فعليًا "تحت" الـ Provider، لا فوقه.
@@ -42,6 +43,8 @@ class _CreateEventView extends StatefulWidget {
 class _CreateEventViewState extends State<_CreateEventView> {
   final _pageController = PageController();
   int _step = 1;
+  double? _latitude;
+  double? _longitude;
   static const _totalSteps = 4;
   static const _stepNames = [
     "Basic Info",
@@ -139,10 +142,20 @@ class _CreateEventViewState extends State<_CreateEventView> {
   Future<void> _pickLocation() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PickLocationPage()),
+      MaterialPageRoute(
+        builder: (_) => PickLocationPage(
+          initialLocation: (_latitude != null && _longitude != null)
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+        ),
+      ),
     );
     if (result != null) {
-      setState(() => _locationName = result['locationName']);
+      setState(() {
+        _locationName = result['locationName'];
+        _latitude = result['latitude'];
+        _longitude = result['longitude'];
+      });
     }
   }
 
@@ -150,15 +163,19 @@ class _CreateEventViewState extends State<_CreateEventView> {
     final builderState = context.read<EventBuilderCubit>().state;
 
     final services = builderState.values.map((selectedService) {
+      /// ⚠️ الخدمات بدون Sub-Services (Hall/Sound) تُرسل بـ items فارغة
+      /// (بانتظار تأكيد الباك اند لشكل الطلب الرسمي بهذه الحالة)
+      final items = selectedService.subServices.values.map((sub) {
+        return CreateBookingItem(
+          subServiceId: sub.id,
+          quantity: sub.quantity,
+          customerNotes: "",
+        );
+      }).toList();
+
       return CreateBookingService(
         serviceId: selectedService.serviceId,
-        items: selectedService.subServices.values.map((sub) {
-          return CreateBookingItem(
-            subServiceId: sub.id,
-            quantity: sub.quantity,
-            customerNotes: "",
-          );
-        }).toList(),
+        items: items,
       );
     }).toList();
 
@@ -186,12 +203,13 @@ class _CreateEventViewState extends State<_CreateEventView> {
     final theme = Theme.of(context);
 
     return BlocListener<EventCubit, EventState>(
+      // في BlocListener<EventCubit, EventState>:
       listener: (context, state) {
         if (state is EventSuccess) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => EventCreatedSuccessPage(response: state.response),
+              builder: (_) => InquirySentPage(response: state.response),
             ),
           );
         }
@@ -240,7 +258,7 @@ class _CreateEventViewState extends State<_CreateEventView> {
                   totalSteps: _totalSteps,
                   stepNames: _stepNames,
                 ),
-              ),  
+              ),
               const SizedBox(height: 10),
               Expanded(
                 child: PageView(
@@ -248,12 +266,13 @@ class _CreateEventViewState extends State<_CreateEventView> {
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _buildStep1(theme),
-                    _buildStep2(theme), 
+                    _buildStep2(theme),
                     _buildStep3(theme),
-                    const SingleChildScrollView(
-                      padding: EdgeInsets.all(20),
-                      child: EventServicesSummary(),
-                    ),
+                    // const SingleChildScrollView(
+                    //   padding: EdgeInsets.all(20),
+                    //   child: EventServicesSummary(),
+                    // ),
+                    _buildStep4Widget(theme),
                   ],
                 ),
               ),
@@ -261,10 +280,11 @@ class _CreateEventViewState extends State<_CreateEventView> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
                 child: BlocBuilder<EventCubit, EventState>(
                   builder: (context, state) {
+                    // وبقسم الزر الأخير:
                     final isLoading = state is EventLoading;
                     return PrimaryButton(
                       title: _step == _totalSteps
-                          ? (isLoading ? "Creating..." : "Create Event")
+                          ? (isLoading ? "Sending..." : "Send Inquiry")
                           : "Next →",
                       isLoading: isLoading,
                       onPressed: isLoading ? null : _next,
@@ -441,7 +461,7 @@ class _CreateEventViewState extends State<_CreateEventView> {
                   theme,
                   "Date",
                   _eventDate == null ? "-" : _formatDate(_eventDate!),
-                ),      
+                ),
                 _summaryRow(
                   theme,
                   "Time",
@@ -456,6 +476,13 @@ class _CreateEventViewState extends State<_CreateEventView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStep4Widget(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: EventServicesSummary(eventDate: _eventDate), // ⚠️ جديد
     );
   }
 

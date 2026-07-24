@@ -9,11 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EventServicesSummary extends StatelessWidget {
-  const EventServicesSummary({super.key});
+  final DateTime? eventDate;
+
+  const EventServicesSummary({super.key, this.eventDate});
 
   void _browseServices(BuildContext context) {
-    /// لازم نلتقط الـ Cubit هون قبل التنقل، لأن الصفحة الجديدة
-    /// تُبنى عبر الـ Navigator ولا ترث الـ Providers من هذا الفرع تلقائياً.
     final eventBuilderCubit = context.read<EventBuilderCubit>();
 
     Navigator.push(
@@ -25,7 +25,7 @@ class EventServicesSummary extends StatelessWidget {
             BlocProvider(create: (_) => sl<ServiceTypesCubit>()..getServiceTypes()),
             BlocProvider.value(value: eventBuilderCubit),
           ],
-          child: const ServicesPage(selectionMode: true),
+          child: ServicesPage(selectionMode: true, eventDate: eventDate),
         ),
       ),
     );
@@ -45,7 +45,6 @@ class EventServicesSummary extends StatelessWidget {
           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55)),
         ),
         const SizedBox(height: 16),
-
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -74,9 +73,7 @@ class EventServicesSummary extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: 20),
-
         BlocBuilder<EventBuilderCubit, Map<String, SelectedService>>(
           builder: (context, selections) {
             if (selections.isEmpty) {
@@ -98,8 +95,11 @@ class EventServicesSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...selections.values.map((service) {
-                  final serviceTotal =
-                      service.subServices.values.fold(0.0, (sum, s) => sum + s.pricePerUnit * s.quantity);
+                  final isWhole = service.wholeServicePrice != null;
+                  final serviceTotal = isWhole
+                      ? service.wholeServicePrice!
+                      : service.subServices.values
+                          .fold(0.0, (sum, s) => sum + s.pricePerUnit * s.quantity);
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -129,22 +129,32 @@ class EventServicesSummary extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Divider(height: 16, color: theme.dividerColor.withOpacity(.3)),
-                        ...service.subServices.values.map((sub) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text("${sub.name} × ${sub.quantity}",
-                                      style: theme.textTheme.bodySmall),
-                                ),
-                                Text("\$${(sub.pricePerUnit * sub.quantity).toStringAsFixed(0)}",
-                                    style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          );
-                        }),
+                        if (isWhole)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text("Full service booking",
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55))),
+                          )
+                        else ...[
+                          Divider(height: 16, color: theme.dividerColor.withOpacity(.3)),
+                          ...service.subServices.values.map((sub) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text("${sub.name} × ${sub.quantity}",
+                                        style: theme.textTheme.bodySmall),
+                                  ),
+                                  Text("\$${(sub.pricePerUnit * sub.quantity).toStringAsFixed(0)}",
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   );
