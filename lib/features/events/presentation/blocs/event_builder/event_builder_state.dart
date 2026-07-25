@@ -29,26 +29,33 @@ class SelectedService {
   final String serviceName;
   final Map<String, SelectedSubService> subServices;
 
-  /// ⚠️ جديد: يُستخدم فقط للخدمات بدون Sub-Services (مثل الصالات، الموسيقى)
-  /// عند وجود قيمة هنا، تعني أن المستخدم اختار الخدمة كاملة مباشرة
+  /// خدمات بدون Sub-Services (Hall/Sound) — وجود قيمة هنا يعني اختيار الخدمة كاملة
   final double? wholeServicePrice;
+
+  /// ⚠️ أُعيدت إضافته: مطلوب من الباك اند فقط للخدمات التي تعتمد Time Slots
+  /// (hasSlots = true) — يُحسب تلقائيًا بمطابقة وقت المناسبة مع الفتحات المتاحة،
+  /// المستخدم لا يختاره يدويًا إطلاقًا.
+  final String? timeSlotId;
 
   const SelectedService({
     required this.serviceId,
     required this.serviceName,
     required this.subServices,
     this.wholeServicePrice,
+    this.timeSlotId,
   });
 
   SelectedService copyWith({
     Map<String, SelectedSubService>? subServices,
     double? wholeServicePrice,
+    String? timeSlotId,
   }) {
     return SelectedService(
       serviceId: serviceId,
       serviceName: serviceName,
       subServices: subServices ?? this.subServices,
       wholeServicePrice: wholeServicePrice ?? this.wholeServicePrice,
+      timeSlotId: timeSlotId ?? this.timeSlotId,
     );
   }
 

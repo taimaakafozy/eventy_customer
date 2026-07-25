@@ -12,30 +12,46 @@ class InquirySentPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final event = response.event;
-    final estimatedTotal = response.bookings.fold(0.0, (sum, b) => sum + b.totalAmount);
+    final estimatedTotal = response.bookings.fold(
+      0.0,
+      (sum, b) => sum + b.totalAmount,
+    );
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
+          child: ListView(
             children: [
               const SizedBox(height: 20),
-              Container(
+              Container(   
                 width: 84,
                 height: 84,
-                decoration: BoxDecoration(color: theme.primaryColor.withOpacity(.12), shape: BoxShape.circle),
-                child: Icon(Icons.mark_email_read_rounded, color: theme.primaryColor, size: 40),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.mark_email_read_rounded,
+                  color: theme.primaryColor,
+                  size: 40,
+                ),
               ),
               const SizedBox(height: 20),
-              Text("Inquiry Sent! 📩",
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                "Inquiry Sent! 📩",
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 "We've received your event details. Our providers will review your request and send you exact pricing within 24 hours.",
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.65)),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(.65),
+                ),
               ),
               const SizedBox(height: 26),
               Container(
@@ -45,18 +61,34 @@ class InquirySentPage extends StatelessWidget {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 14, offset: const Offset(0, 5)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Event Info", style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      "Event Info",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     _row(theme, "Name", event.name),
-                    _row(theme, "Date",
-                        "${event.eventDate.year}-${event.eventDate.month.toString().padLeft(2, '0')}-${event.eventDate.day.toString().padLeft(2, '0')}"),
-                    _row(theme, "Time", "${event.eventStartTime} - ${event.eventEndTime}"),
+                    _row(
+                      theme,
+                      "Date",
+                      "${event.eventDate.year}-${event.eventDate.month.toString().padLeft(2, '0')}-${event.eventDate.day.toString().padLeft(2, '0')}",
+                    ),
+                    _row(
+                      theme,
+                      "Time",
+                      "${event.eventStartTime} - ${event.eventEndTime}",
+                    ),
                     _row(theme, "Location", event.eventLocation),
                     _row(theme, "Guests", "${event.numberOfGuests}"),
                   ],
@@ -70,13 +102,22 @@ class InquirySentPage extends StatelessWidget {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 14, offset: const Offset(0, 5)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Requested Services", style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      "Requested Services",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     ...response.bookings.map((b) {
                       return Padding(
@@ -84,14 +125,23 @@ class InquirySentPage extends StatelessWidget {
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text("Service #${b.serviceId.substring(0, 8)}",
-                                  style: theme.textTheme.bodySmall),
+                              child: Text(
+                                "Service #${b.serviceId.substring(0, 8)}",
+                                style: theme.textTheme.bodySmall,
+                              ),
                             ),
-                            Text("~\$${b.totalAmount.toStringAsFixed(0)}",
-                                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(
+                              "~\$${b.totalAmount.toStringAsFixed(0)}",
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                             const SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.warning.withOpacity(.15),
                                 borderRadius: BorderRadius.circular(20),
@@ -113,11 +163,19 @@ class InquirySentPage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Estimated Total",
-                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
-                        Text("~\$${estimatedTotal.toStringAsFixed(0)}",
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(color: theme.primaryColor, fontWeight: FontWeight.bold)),
+                        Text(
+                          "Estimated Total",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          "~\$${estimatedTotal.toStringAsFixed(0)}",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -134,7 +192,8 @@ class InquirySentPage extends StatelessWidget {
               const Spacer(),
               PrimaryButton(
                 title: "Back to Home",
-                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                onPressed: () =>
+                    Navigator.of(context).popUntil((route) => route.isFirst),
               ),
             ],
           ),
@@ -149,11 +208,20 @@ class InquirySentPage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.6))),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(.6),
+            ),
+          ),
           Expanded(
-            child: Text(value,
-                textAlign: TextAlign.end, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

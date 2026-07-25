@@ -3,6 +3,7 @@ import 'package:eventy_customer/core/utils/date_format_helper.dart';
 import 'package:eventy_customer/core/utils/service_type_helper.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_state.dart';
+import 'package:eventy_customer/features/services/domain/validators/service_time_matcher.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_state.dart';
 import 'package:eventy_customer/features/services/presentation/widgets/service_details/availability_section.dart';
@@ -20,14 +21,20 @@ class ServiceDetailsPage extends StatefulWidget {
   /// وضع الاختيار — يُستخدم فقط أثناء إنشاء/تعديل مناسبة، ويتطلب EventBuilderCubit بالـ context
   final bool selectable;
 
-  /// تاريخ المناسبة — إن وُجد، يُرسل للـ API لفلترة التوفر بهذا اليوم فقط
+  /// بيانات المناسبة — تُستخدم لفلترة التوفر ومطابقة الوقت تلقائيًا
   final DateTime? eventDate;
+  final String? eventStartTime;
+  final String? eventEndTime;
+  final int? eventGuests;
 
   const ServiceDetailsPage({
     super.key,
     required this.serviceId,
     this.selectable = false,
     this.eventDate,
+    this.eventStartTime,
+    this.eventEndTime,
+    this.eventGuests,
   });
 
   @override
@@ -86,6 +93,27 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
           }
 
           final service = (state as ServiceDetailsLoaded).service;
+
+          /// ⚠️ مطابقة الوقت تُحسب فقط أثناء إنشاء مناسبة (selectable + eventDate)
+          final hasEventContext = widget.selectable && widget.eventDate != null;
+
+          ServiceTimeMatchResult? timeMatch;
+          if (hasEventContext && widget.eventStartTime != null && widget.eventEndTime != null) {
+            timeMatch = ServiceTimeMatcher.match(
+              availability: service.availability,
+              eventStartTime: widget.eventStartTime!,
+              eventEndTime: widget.eventEndTime!,
+            );
+          }
+
+          final bool dayOnlyAvailable = service.isAvailableForFilteredDate;
+
+          final bool guestsOk = !(service.maxCapacity != null &&
+              widget.eventGuests != null &&
+              widget.eventGuests! > service.maxCapacity!);
+
+          final bool timeOk = hasEventContext ? (timeMatch?.fits ?? dayOnlyAvailable) : true;
+          final bool canBook = timeOk && guestsOk;
 
           return RefreshIndicator(
             onRefresh: () async => context.read<ServiceDetailsCubit>().refresh(),
@@ -272,30 +300,27 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           const SizedBox(height: 24),
                         ],
 
-                        /// بانر عدم التوفر لليوم المحدد (فقط أثناء إنشاء مناسبة)
-                        if (widget.eventDate != null && !service.isAvailableForFilteredDate) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(.08),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.error.withOpacity(.3)),
+                        /// ⚠️ بانرات مطابقة الوقت والسعة — فقط أثناء إنشاء مناسبة
+                        if (hasEventContext) ...[
+                          if (timeMatch != null && !timeMatch.fits)
+                            _WarningBanner(icon: Icons.event_busy_rounded, message: timeMatch.reason)
+                          else if (timeMatch == null && !dayOnlyAvailable)
+                            _WarningBanner(
+                              icon: Icons.event_busy_rounded,
+                              message:
+                                  "This service is not available on ${DateFormatHelper.toIsoDateOnly(widget.eventDate!)}.",
+                            )
+                          else if (timeMatch != null && timeMatch.fits)
+                            _SuccessBanner(message: timeMatch.reason),
+                          if (!guestsOk)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: _WarningBanner(
+                                icon: Icons.groups_rounded,
+                                message:
+                                    "Your guest count (${widget.eventGuests}) exceeds this service's maximum capacity (${service.maxCapacity}).",
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.event_busy_rounded, color: AppColors.error),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    "This service is not available on ${DateFormatHelper.toIsoDateOnly(widget.eventDate!)}",
-                                    style: theme.textTheme.bodyMedium
-                                        ?.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                           const SizedBox(height: 24),
                         ],
 
@@ -314,7 +339,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           const SizedBox(height: 30),
                         ],
 
-                        /// ⚠️ الحالة الجديدة: خدمة بدون Sub-Services (Hall, Sound)
+                        /// خدمة بدون Sub-Services (Hall, Sound) — اختيار مباشر
                         if (widget.selectable && service.subServices.isEmpty && !service.hasPackageServices) ...[
                           Text("Book This Service",
                               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -332,10 +357,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                               return _WholeServiceCard(
                                 isSelected: isSelected,
                                 price: service.price,
+                                enabled: canBook,
                                 onTap: () => context.read<EventBuilderCubit>().toggleWholeService(
                                       serviceId: service.id,
                                       serviceName: service.provider.businessName,
                                       price: service.price ?? 0,
+                                      timeSlotId: timeMatch?.timeSlotId,
                                     ),
                               );
                             },
@@ -370,6 +397,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                     return SubServiceCard(
                                       subService: s,
                                       selectable: true,
+                                      enabled: canBook,
                                       isSelected: selectedSub != null,
                                       quantity: selectedSub?.quantity ?? 1,
                                       onToggle: () => context.read<EventBuilderCubit>().toggleSubService(
@@ -379,6 +407,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                             subServiceName: s.name,
                                             pricePerUnit: s.pricePerUnit,
                                             unitType: s.unitType,
+                                            timeSlotId: timeMatch?.timeSlotId,
                                           ),
                                       onQuantityChanged: (q) =>
                                           context.read<EventBuilderCubit>().setQuantity(service.id, s.id, q),
@@ -499,54 +528,127 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
   }
 }
 
-/// كارد اختيار مبسّط للخدمات بدون Sub-Services
+class _WarningBanner extends StatelessWidget {
+  final IconData icon;
+  final String message;
+
+  const _WarningBanner({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withOpacity(.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuccessBanner extends StatelessWidget {
+  final String message;
+
+  const _SuccessBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: AppColors.success),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "✓ $message",
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WholeServiceCard extends StatelessWidget {
   final bool isSelected;
   final double? price;
+  final bool enabled;
   final VoidCallback onTap;
 
-  const _WholeServiceCard({required this.isSelected, required this.price, required this.onTap});
+  const _WholeServiceCard({
+    required this.isSelected,
+    required this.price,
+    required this.enabled,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected ? theme.primaryColor.withOpacity(.08) : theme.cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isSelected ? theme.primaryColor : theme.dividerColor.withOpacity(.2),
-              width: isSelected ? 1.6 : 1,
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: enabled ? onTap : null,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected ? theme.primaryColor.withOpacity(.08) : theme.cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isSelected ? theme.primaryColor : theme.dividerColor.withOpacity(.2),
+                width: isSelected ? 1.6 : 1,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface.withOpacity(.35),
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  "Book this service for your event",
-                  style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface.withOpacity(.35),
+                  size: 24,
                 ),
-              ),
-              if (price != null)
-                Text(
-                  "\$${price!.toStringAsFixed(0)}",
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(color: AppColors.gold, fontWeight: FontWeight.w800),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Book this service for your event",
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
-            ],
+                if (price != null)
+                  Text(
+                    "\$${price!.toStringAsFixed(0)}",
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: AppColors.gold, fontWeight: FontWeight.w800),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

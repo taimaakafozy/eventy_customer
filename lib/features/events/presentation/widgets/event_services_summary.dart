@@ -10,8 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EventServicesSummary extends StatelessWidget {
   final DateTime? eventDate;
+  final String? eventStartTime;
+  final String? eventEndTime;
+  final int? eventGuests;
 
-  const EventServicesSummary({super.key, this.eventDate});
+  const EventServicesSummary({super.key, this.eventDate, this.eventStartTime,
+    this.eventEndTime,
+    this.eventGuests,});
 
   void _browseServices(BuildContext context) {
     final eventBuilderCubit = context.read<EventBuilderCubit>();
@@ -25,7 +30,13 @@ class EventServicesSummary extends StatelessWidget {
             BlocProvider(create: (_) => sl<ServiceTypesCubit>()..getServiceTypes()),
             BlocProvider.value(value: eventBuilderCubit),
           ],
-          child: ServicesPage(selectionMode: true, eventDate: eventDate),
+          child: ServicesPage(
+            selectionMode: true,
+            eventDate: eventDate,
+            eventStartTime: eventStartTime,
+            eventEndTime: eventEndTime,
+            eventGuests: eventGuests,
+          ),
         ),
       ),
     );

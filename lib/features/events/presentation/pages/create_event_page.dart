@@ -160,43 +160,36 @@ class _CreateEventViewState extends State<_CreateEventView> {
   }
 
   void _submit() {
-    final builderState = context.read<EventBuilderCubit>().state;
+  final builderState = context.read<EventBuilderCubit>().state;
 
-    final services = builderState.values.map((selectedService) {
-      /// ⚠️ الخدمات بدون Sub-Services (Hall/Sound) تُرسل بـ items فارغة
-      /// (بانتظار تأكيد الباك اند لشكل الطلب الرسمي بهذه الحالة)
-      final items = selectedService.subServices.values.map((sub) {
-        return CreateBookingItem(
-          subServiceId: sub.id,
-          quantity: sub.quantity,
-          customerNotes: "",
-        );
-      }).toList();
-
-      return CreateBookingService(
-        serviceId: selectedService.serviceId,
-        items: items,
-      );
+  final services = builderState.values.map((selectedService) {
+    /// ⚠️ الخدمات بدون Sub-Services (Hall/Sound) تُرسل بـ items فارغة —
+    /// هذا هو الشكل الصحيح والمطلوب من الباك اند لهذه الحالة (وليس استثناءً).
+    final items = selectedService.subServices.values.map((sub) {
+      return CreateBookingItem(subServiceId: sub.id, quantity: sub.quantity, customerNotes: "");
     }).toList();
 
-    final request = CreateEventRequest(
-      name: _nameController.text.trim(),
-      eventType: _eventType!,
-      eventDate: DateTime.utc(
-        _eventDate!.year,
-        _eventDate!.month,
-        _eventDate!.day,
-      ),
-      eventStartTime: _formatTime(_startTime!),
-      eventEndTime: _formatTime(_endTime!),
-      eventLocation: _locationName!,
-      numberOfGuests: _guests,
-      customerNotes: _notesController.text.trim(),
-      services: services,
+    return CreateBookingService(
+      serviceId: selectedService.serviceId,
+      timeSlotId: selectedService.timeSlotId,
+      items: items,
     );
+  }).toList();
 
-    context.read<EventCubit>().createEvent(request);
-  }
+  final request = CreateEventRequest(
+    name: _nameController.text.trim(),
+    eventType: _eventType!,
+    eventDate: DateTime.utc(_eventDate!.year, _eventDate!.month, _eventDate!.day),
+    eventStartTime: _formatTime(_startTime!),
+    eventEndTime: _formatTime(_endTime!),
+    eventLocation: _locationName!,
+    numberOfGuests: _guests,
+    customerNotes: _notesController.text.trim(),
+    services: services,
+  );
+
+  context.read<EventCubit>().createEvent(request);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -479,12 +472,17 @@ class _CreateEventViewState extends State<_CreateEventView> {
     );
   }
 
-  Widget _buildStep4Widget(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: EventServicesSummary(eventDate: _eventDate), // ⚠️ جديد
-    );
-  }
+ Widget _buildStep4Widget(ThemeData theme) {
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(20),
+    child: EventServicesSummary(
+      eventDate: _eventDate,
+      eventStartTime: _startTime != null ? _formatTime(_startTime!) : null,
+      eventEndTime: _endTime != null ? _formatTime(_endTime!) : null,
+      eventGuests: _guests,
+    ),
+  );
+}
 
   Widget _summaryRow(ThemeData theme, String label, String value) {
     return Padding(

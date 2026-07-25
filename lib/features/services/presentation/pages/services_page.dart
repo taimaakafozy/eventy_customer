@@ -23,8 +23,13 @@ class ServicesPage extends StatefulWidget {
   /// EventBuilderCubit متوفراً بالـ context (يُمرَّر من الصفحة المستدعية).
   final bool selectionMode;
   final DateTime? eventDate;
+  final String? eventStartTime;
+  final String? eventEndTime;
+  final int? eventGuests;
 
-  const ServicesPage({super.key, this.selectedType, this.selectionMode = false,this.eventDate,});
+  const ServicesPage({super.key, this.selectedType, this.selectionMode = false,this.eventDate,this.eventStartTime,
+    this.eventEndTime,
+    this.eventGuests,});
 
   @override
   State<ServicesPage> createState() => _ServicesPageState();
@@ -44,7 +49,7 @@ class _ServicesPageState extends State<ServicesPage> {
     _controller = ScrollController()..addListener(_loadMore);
     _selectedType = widget.selectedType;
   }
-
+ 
   void _loadServices() {
     context.read<AvailableServicesCubit>().loadServices(_selectedType?.name);
   }
@@ -53,7 +58,7 @@ class _ServicesPageState extends State<ServicesPage> {
     if (!_controller.hasClients) return;
     if (_controller.position.pixels >= _controller.position.maxScrollExtent - 220) {
       context.read<AvailableServicesCubit>().loadMore();
-    }
+    } 
   }
 
   @override
@@ -64,21 +69,28 @@ class _ServicesPageState extends State<ServicesPage> {
   }
 
   void _openDetails(String serviceId) {
-    final eventBuilderCubit = widget.selectionMode ? context.read<EventBuilderCubit>() : null;
+  final eventBuilderCubit = widget.selectionMode ? context.read<EventBuilderCubit>() : null;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
-            if (eventBuilderCubit != null) BlocProvider.value(value: eventBuilderCubit),
-          ],
-          child: ServiceDetailsPage(serviceId: serviceId, selectable: widget.selectionMode , eventDate: widget.eventDate,),
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
+          if (eventBuilderCubit != null) BlocProvider.value(value: eventBuilderCubit),
+        ],
+        child: ServiceDetailsPage(
+          serviceId: serviceId,
+          selectable: widget.selectionMode,
+          eventDate: widget.eventDate,
+          eventStartTime: widget.eventStartTime,
+          eventEndTime: widget.eventEndTime,
+          eventGuests: widget.eventGuests,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

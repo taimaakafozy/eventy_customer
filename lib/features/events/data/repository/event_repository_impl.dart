@@ -1,3 +1,5 @@
+import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
+
 import '../../domain/repository/event_repository.dart';
 import '../datasource/event_remote_datasource.dart';
 import '../models/create_event_model.dart';
@@ -16,6 +18,21 @@ class EventRepositoryImpl
   ) {
     return remoteDataSource.createEvent(
       request,
+    );
+  }
+
+    @override
+  Future<GetAllEventsResponse> getAllEvents({
+    int page = 1,
+    int limit = 10,
+    String sortBy = 'createdAt',
+    String order = 'desc',
+  }) {
+    return remoteDataSource.getAllEvents(
+      page: page,
+      limit: limit,
+      sortBy: sortBy,
+      order: order,
     );
   }
 }

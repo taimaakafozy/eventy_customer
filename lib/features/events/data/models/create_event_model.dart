@@ -36,15 +36,18 @@ class CreateEventRequest {
 
 class CreateBookingService {
   final String serviceId;
+  final String? timeSlotId;
   final List<CreateBookingItem> items;
 
   CreateBookingService({
     required this.serviceId,
+    this.timeSlotId,
     required this.items,
   });
 
   Map<String, dynamic> toJson() => {
         "serviceId": serviceId,
+        if (timeSlotId != null) "timeSlotId": timeSlotId,
         "items": items.map((e) => e.toJson()).toList(),
       };
 }
