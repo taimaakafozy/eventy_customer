@@ -1,6 +1,6 @@
 import 'package:eventy_customer/core/di/service_locator.dart';
+import 'package:eventy_customer/features/events/presentation/pages/my_events_page.dart';
 import 'package:eventy_customer/features/home/presentation/pages/home_page.dart';
-import 'package:eventy_customer/features/layout/presentation/pages/settings_page.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/pages/services_page.dart';
@@ -12,39 +12,29 @@ import '../cubit/bottom_navigation_cubit.dart';
 class MainLayout extends StatelessWidget {
   const MainLayout({super.key});
 
-  static final   List<Widget> _pages = [
+  static final List<Widget> _pages = [
     HomePage(),
     BlocProvider(
-    create: (_) => sl<AvailableServicesCubit>()
-      ..loadServices(null),
-    child: const ServicesPage(),
-  ),
+      create: (_) => sl<AvailableServicesCubit>()..loadServices(null),
+      child: const ServicesPage(),
+    ),
 
-    // Scaffold(body: Center(child: Text("Favorites"))),
-    Scaffold(body: Center(child: Text("Bookings"))),
+    Scaffold(body: Center(child: Text("Favorites"))),
+    const MyEventsPage(),
     Scaffold(body: Center(child: Text("Profile"))),
-    SettingsPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
-   return MultiBlocProvider(
-  providers: [
-    BlocProvider(
-      create: (_) => BottomNavigationCubit(),
-    ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => BottomNavigationCubit()),
 
-    BlocProvider(
-      create: (_) => sl<ServiceTypesCubit>()
-        ..getServiceTypes(),
-    ),
-    
-  ],
-  child: BlocBuilder<BottomNavigationCubit, int>(
+        BlocProvider(create: (_) => sl<ServiceTypesCubit>()..getServiceTypes()),
+      ],
+      child: BlocBuilder<BottomNavigationCubit, int>(
         builder: (context, currentIndex) {
           return Scaffold(
-            // backgroundColor: AppColors.dark,
-            // body: _pages[currentIndex],
             body: IndexedStack(index: currentIndex, children: _pages),
             bottomNavigationBar: Builder(
               builder: (context) {
@@ -53,19 +43,16 @@ class MainLayout extends StatelessWidget {
                 final icons = [
                   Icons.home,
                   Icons.search_outlined,
-                  // Icons.favorite_border,
+                  Icons.favorite_border,
                   Icons.book_outlined,
                   Icons.person_outline,
-                  // Icons.dashboard_outlined,
-                  Icons.settings,
                 ];
                 final labels = [
                   "Home",
                   "Services",
-                  // "Favorites",
+                  "Favorites",
                   "Bookings",
                   "Profile",
-                  'الإعدادات',
                 ];
                 return Container(
                   decoration: BoxDecoration(

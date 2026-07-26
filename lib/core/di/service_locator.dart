@@ -1,9 +1,11 @@
+import 'package:eventy_customer/features/auth/domain/usecases/change_password_usecase.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/register_usecase.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/request_reset_password_usecase.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/resend_otp_usecase.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:eventy_customer/features/auth/domain/usecases/verify_otp_usecase.dart';
+import 'package:eventy_customer/features/auth/presentation/blocs/change_password_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/register_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/request_reset_password_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/resend_otp_cubit.dart';
@@ -13,8 +15,15 @@ import 'package:eventy_customer/features/events/data/datasource/event_remote_dat
 import 'package:eventy_customer/features/events/data/repository/event_repository_impl.dart';
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
 import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
+import 'package:eventy_customer/features/events/domain/usecases/get_all_events_usecase.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/get_All_Events/Get_All_Events_Cubit.dart';
+import 'package:eventy_customer/features/favorites/data/datasource/favorite_remote_datasource.dart';
+import 'package:eventy_customer/features/favorites/data/repository/favorite_repository_impl.dart';
+import 'package:eventy_customer/features/favorites/domain/repository/favorite_repository.dart';
+import 'package:eventy_customer/features/favorites/domain/usecases/add_to_favorite_usecase.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorite/favorite_cubit.dart';
 import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
 import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
 import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
@@ -24,6 +33,11 @@ import 'package:eventy_customer/features/services/domain/usecases/get_service_ty
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
+import 'package:eventy_customer/features/user_profile/data/datasources/user_profile_remote_data_source.dart';
+import 'package:eventy_customer/features/user_profile/data/repositories/user_profile_repository_impl.dart';
+import 'package:eventy_customer/features/user_profile/domain/repositories/user_profile_repository.dart';
+import 'package:eventy_customer/features/user_profile/domain/usecases/get_user_profile_usecase.dart';
+import 'package:eventy_customer/features/user_profile/presentation/blocs/user_profile_cubit.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -118,6 +132,26 @@ sl.registerFactory<ResetPasswordCubit>(
   ),
 );
 
+sl.registerLazySingleton<ChangePasswordUseCase>(() => ChangePasswordUseCase(sl()));
+sl.registerFactory<ChangePasswordCubit>(() => ChangePasswordCubit(sl()));
+
+/// User Profile
+sl.registerLazySingleton<UserProfileRemoteDataSource>(
+  () => UserProfileRemoteDataSourceImpl(sl()),
+);
+
+sl.registerLazySingleton<UserProfileRepository>(
+  () => UserProfileRepositoryImpl(sl()),
+);
+
+sl.registerLazySingleton<GetUserProfileUseCase>(
+  () => GetUserProfileUseCase(sl()),
+);
+
+sl.registerFactory<UserProfileCubit>(
+  () => UserProfileCubit(sl()),
+);
+
   /// Services
 
   sl.registerLazySingleton<ServiceRemoteDataSource>(
@@ -182,5 +216,32 @@ sl.registerFactory(
 );
 
 sl.registerFactory<EventBuilderCubit>(() => EventBuilderCubit());
+
+sl.registerLazySingleton(() => GetAllEventsUseCase(sl()));
+sl.registerFactory<GetAllEventsCubit>(() => GetAllEventsCubit(sl()));
+
+// Favorites
+
+sl.registerLazySingleton<FavoriteRemoteDataSource>(
+  () => FavoriteRemoteDataSourceImpl(
+    sl(),
+  ),
+);
+
+sl.registerLazySingleton<FavoriteRepository>(
+  () => FavoriteRepositoryImpl(sl()),
+);
+
+sl.registerLazySingleton(
+  () => AddToFavoriteUseCase(
+    sl(),
+  ),
+);
+
+sl.registerFactory(
+  () => FavoriteCubit(
+    sl(),
+  ),
+);
 }
 

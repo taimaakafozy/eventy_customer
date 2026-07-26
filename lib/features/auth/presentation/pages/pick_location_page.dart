@@ -8,13 +8,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 class PickLocationPage extends StatefulWidget {
-  /// إحداثيات ابتدائية اختيارية (مثلاً موقع سبق للمستخدم أن حدده)
-  /// تُستخدم بدل الاعتماد الإجباري على GPS الجهاز الحالي
   final LatLng? initialLocation;
 
   const PickLocationPage({super.key, this.initialLocation});
 
-  @override  
+  @override
   State<PickLocationPage> createState() => _PickLocationPageState();
 }
 
@@ -26,6 +24,10 @@ class _PickLocationPageState extends State<PickLocationPage> {
 
   bool _isLoadingLocation = true;
   bool _isResolvingAddress = false;
+
+  /// ⚠️ جديد: يصبح true فقط بعد أن يُبنى FlutterMap فعليًا (onMapReady)
+  /// حتى لا نستدعي _mapController.move() قبل ارتباط الـ controller بالخريطة
+  bool _mapReady = false;
 
   Timer? _debounce;
 
@@ -70,7 +72,12 @@ class _PickLocationPageState extends State<PickLocationPage> {
       _center = LatLng(position.latitude, position.longitude);
 
       if (mounted) {
-        _mapController.move(_center!, 15);
+        /// ⚠️ الإصلاح: ننقل الخريطة فقط إذا كانت مبنية فعليًا (زر "My Location"
+        /// بعد أول تحميل). عند أول فتح للصفحة، الخريطة نفسها تُبنى بـ initialCenter
+        /// الصحيح مباشرة، فلا حاجة لاستدعاء move() هنا إطلاقًا.
+        if (_mapReady) {
+          _mapController.move(_center!, 15);
+        }
         setState(() => _isLoadingLocation = false);
       }
 
@@ -94,8 +101,6 @@ class _PickLocationPageState extends State<PickLocationPage> {
 
     if (!hasGesture) return;
 
-    /// Debounce: ننتظر توقف حركة الخريطة قبل عمل reverse geocoding
-    /// تجنبًا لإطلاق طلبات كثيرة أثناء السحب المستمر
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 600), () {
       _resolveAddress(camera.center);
@@ -161,21 +166,19 @@ class _PickLocationPageState extends State<PickLocationPage> {
               initialCenter: _center!,
               initialZoom: 15,
               onPositionChanged: _onMapEvent,
+              /// ⚠️ جديد: يُستدعى مرة واحدة فقط بعد أن تصبح الخريطة جاهزة فعليًا
+              onMapReady: () {
+                _mapReady = true;
+              },
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.eventy_customer',
-                errorTileCallback: (tile, error, stackTrace) {
-                  /// نتجاهل أخطاء تحميل التبليطات الفردية بصمت (مشكلة شبكة مؤقتة)
-                  /// حتى لا تتعطل الواجهة — المستخدم يبقى قادرًا على تحديد الموقع
-                  /// حتى لو لم تظهر بعض تبليطات الخريطة
-                },
+                errorTileCallback: (tile, error, stackTrace) {},
               ),
             ],
           ),
-
-          /// Pin مركزي ثابت — الخريطة تتحرك تحته
           IgnorePointer(
             child: Align(
               alignment: Alignment.center,
@@ -185,8 +188,6 @@ class _PickLocationPageState extends State<PickLocationPage> {
               ),
             ),
           ),
-
-          /// معاينة العنوان
           Positioned(
             top: 16,
             left: 16,
@@ -216,8 +217,6 @@ class _PickLocationPageState extends State<PickLocationPage> {
               ),
             ),
           ),
-
-          /// زر إعادة التمركز على موقع الجهاز الحالي
           Positioned(
             bottom: 100,
             right: 16,
@@ -229,7 +228,6 @@ class _PickLocationPageState extends State<PickLocationPage> {
               child: const Icon(Icons.my_location_rounded),
             ),
           ),
-
           Positioned(
             bottom: 25,
             left: 20,

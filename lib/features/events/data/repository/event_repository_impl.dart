@@ -21,18 +21,26 @@ class EventRepositoryImpl
     );
   }
 
-    @override
+   @override
   Future<GetAllEventsResponse> getAllEvents({
     int page = 1,
     int limit = 10,
     String sortBy = 'createdAt',
     String order = 'desc',
+    String? status,
+    String? fromDate,
+    String? toDate,
+    bool ?archived,
   }) {
     return remoteDataSource.getAllEvents(
       page: page,
       limit: limit,
       sortBy: sortBy,
       order: order,
+      status: status,
+      fromDate: fromDate,
+      toDate: toDate,
+      archived: archived,
     );
   }
 }

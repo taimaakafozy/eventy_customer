@@ -12,6 +12,10 @@ abstract class EventRemoteDataSource {
     int limit = 10,
     String sortBy = 'createdAt',
     String order = 'desc',
+    String? status,
+    String? fromDate,
+    String? toDate,
+    bool? archived,
   });
 }
 
@@ -43,34 +47,36 @@ class EventRemoteDataSourceImpl
       data,
     );
   }
-    @override
+   @override
   Future<GetAllEventsResponse> getAllEvents({
     int page = 1,
     int limit = 10,
     String sortBy = 'createdAt',
     String order = 'desc',
+    String? status,
+    String? fromDate,
+    String? toDate,
+    bool ?archived,
   }) async {
-    final response = await client.dio.get(
-      'events',
-      queryParameters: {
-        'page': page,
-        'limit': limit,
-        'sortBy': sortBy,
-        'order': order,
-      },
-    );
+    final query = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+      'sortBy': sortBy,
+      'order': order,
+      'archived': archived,
+    };
 
+    if (status != null && status.isNotEmpty) query['status'] = status;
+    if (fromDate != null && fromDate.isNotEmpty) query['fromDate'] = fromDate;
+    if (toDate != null && toDate.isNotEmpty) query['toDate'] = toDate;
+
+    final response = await client.dio.get('events', queryParameters: query);
     final data = response.data;
 
     if (data['success'] != true) {
-      throw Exception(
-        data['message'] ??
-            'Failed to load events',
-      );
+      throw Exception(data['message'] ?? 'Failed to load events');
     }
 
-    return GetAllEventsResponse.fromJson(
-      data,
-    );
+    return GetAllEventsResponse.fromJson(data);
   }
 }

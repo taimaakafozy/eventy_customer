@@ -2,9 +2,9 @@ import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/widgets/app_search_field.dart';
 import 'package:eventy_customer/features/events/presentation/pages/create_event_page.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/Create_Event_Card.dart';
+import 'package:eventy_customer/features/home/presentation/widgets/Drawer/drawer.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/categories/categories_section.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/hero_banner/hero_banner.dart';
-import 'package:eventy_customer/features/home/presentation/widgets/home_header.dart';
 import 'package:eventy_customer/features/home/presentation/widgets/packages/recommended_packages_section.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
 import 'package:flutter/material.dart';
@@ -19,13 +19,33 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: AppDrawer(),
+      appBar: AppBar(
+        title: const Text("Eventy"),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded),
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              const HomeHeader(),
-              const SizedBox(height: 10),
               const AppSearchField(hintText: "Search events..."),
               const SizedBox(height: 15),
               const HeroBanner(),
@@ -58,4 +78,3 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-

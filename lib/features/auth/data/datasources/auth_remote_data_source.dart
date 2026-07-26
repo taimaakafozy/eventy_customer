@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:eventy_customer/features/auth/data/models/change_password_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_response_model.dart';
 import 'package:eventy_customer/features/auth/data/models/request_reset_password_request_model.dart';
@@ -39,6 +40,7 @@ Future<RequestResetPasswordResponseModel> requestResetPassword(
 Future<ResetPasswordResponseModel> resetPassword(
   ResetPasswordRequestModel request,
 );
+Future<void> changePassword(ChangePasswordRequestModel request);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -196,6 +198,20 @@ Future<ResetPasswordResponseModel> resetPassword(
   }
 
   return ResetPasswordResponseModel.fromJson(data);
+}
+
+@override
+Future<void> changePassword(ChangePasswordRequestModel request) async {
+  final response = await client.dio.post(
+    'auth/change-password',
+    data: request.toJson(),
+  );
+
+  final data = response.data;
+
+  if (data['success'] != true) {
+    throw Exception(data['message'] ?? 'Failed to change password');
+  }
 }
 
 }

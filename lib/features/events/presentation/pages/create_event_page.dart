@@ -150,7 +150,7 @@ class _CreateEventViewState extends State<_CreateEventView> {
         ),
       ),
     );
-    if (result != null) {
+    if (result != null) { 
       setState(() {
         _locationName = result['locationName'];
         _latitude = result['latitude'];
@@ -163,8 +163,6 @@ class _CreateEventViewState extends State<_CreateEventView> {
   final builderState = context.read<EventBuilderCubit>().state;
 
   final services = builderState.values.map((selectedService) {
-    /// ⚠️ الخدمات بدون Sub-Services (Hall/Sound) تُرسل بـ items فارغة —
-    /// هذا هو الشكل الصحيح والمطلوب من الباك اند لهذه الحالة (وليس استثناءً).
     final items = selectedService.subServices.values.map((sub) {
       return CreateBookingItem(subServiceId: sub.id, quantity: sub.quantity, customerNotes: "");
     }).toList();
@@ -196,24 +194,24 @@ class _CreateEventViewState extends State<_CreateEventView> {
     final theme = Theme.of(context);
 
     return BlocListener<EventCubit, EventState>(
-      // في BlocListener<EventCubit, EventState>:
       listener: (context, state) {
-        if (state is EventSuccess) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => InquirySentPage(response: state.response),
-            ),
-          );
-        }
-        if (state is EventError) {
-          showAppSnackBar(
-            context,
-            message: state.message,
-            type: SnackBarType.error,
-          );
-        }
-      },
+  if (state is EventSuccess) {
+  
+    final serviceNames = <String, String>{
+      for (final s in context.read<EventBuilderCubit>().state.values) s.serviceId: s.serviceName,
+    };
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InquirySentPage(response: state.response, serviceNames: serviceNames),
+      ),
+    );
+  }
+  if (state is EventError) {
+    showAppSnackBar(context, message: state.message, type: SnackBarType.error);
+  }
+},
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(

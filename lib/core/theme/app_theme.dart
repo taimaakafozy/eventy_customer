@@ -29,6 +29,21 @@ class AppTheme {
       ),
     ),
 
+    timePickerTheme: TimePickerThemeData(
+  backgroundColor: AppColors.grey,
+  hourMinuteColor: AppColors.softPurple,
+  dialBackgroundColor: AppColors.softPurple,
+  entryModeIconColor: AppColors.primary,
+),
+
+datePickerTheme: DatePickerThemeData(
+  backgroundColor: AppColors.grey,
+  headerBackgroundColor: AppColors.primary,
+  headerForegroundColor: Colors.white,
+  todayForegroundColor: WidgetStateProperty.all(AppColors.primary),
+  dayForegroundColor: WidgetStateProperty.all(AppColors.darkText),
+),
+
     appBarTheme: const AppBarTheme(
       elevation: 0,
       backgroundColor: AppColors.lightBackground,
@@ -161,6 +176,21 @@ class AppTheme {
     dialogTheme: const DialogThemeData(
   backgroundColor: AppColors.cardDark,
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+),
+
+timePickerTheme: TimePickerThemeData(
+  backgroundColor: AppColors.cardDark,
+  hourMinuteColor: AppColors.primary.withOpacity(.15),
+  dialBackgroundColor: AppColors.primary.withOpacity(.1),
+  entryModeIconColor: AppColors.secondary,
+),
+
+datePickerTheme: DatePickerThemeData(
+  backgroundColor: AppColors.cardDark,
+  headerBackgroundColor: AppColors.primary,
+  headerForegroundColor: Colors.white,
+  todayForegroundColor: WidgetStateProperty.all(AppColors.secondary),
+  dayForegroundColor: WidgetStateProperty.all(AppColors.lightText),
 ),
 
     appBarTheme: const AppBarTheme(

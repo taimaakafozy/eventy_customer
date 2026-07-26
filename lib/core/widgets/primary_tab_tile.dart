@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class PrimaryTabTile extends StatelessWidget {
   final String title;
-  final String?subtitle;
-  final String?subtitle2;
+  final String? subtitle;
+  final String? subtitle2;
 
   final IconData icon;
   final VoidCallback? onTap;
@@ -21,7 +21,7 @@ class PrimaryTabTile extends StatelessWidget {
     this.child,
     this.isExpanded = false,
     this.showArrow = true,
-     this. subtitle,
+    this.subtitle,
     this.subtitle2,
   });
 
@@ -65,7 +65,7 @@ class PrimaryTabTile extends StatelessWidget {
                           children: [
                             Text(
                               title,
-                              style: theme.textTheme.titleMedium?.copyWith(
+                              style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -74,7 +74,7 @@ class PrimaryTabTile extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 subtitle!,
-                                style: theme.textTheme.bodySmall?.copyWith(
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   // color: Colors.grey[600],
                                 ),
                               ),
@@ -91,16 +91,16 @@ class PrimaryTabTile extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (trailing != null) trailing!,
-                      if (showArrow && trailing == null)
-                        AnimatedRotation(
-                          turns: isExpanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            Icons.expand_more,
-                            color: theme.primaryColor,
-                          ),
-                        ),
+                      // if (trailing != null) trailing!,
+                      // if (showArrow && trailing == null)
+                      //   AnimatedRotation(
+                      //     turns: isExpanded ? 0.5 : 0,
+                      //     duration: const Duration(milliseconds: 200),
+                      //     child: Icon(
+                      //       Icons.expand_more,
+                      //       color: theme.primaryColor,
+                      //     ),
+                      //   ),
                     ],
                   ),
 

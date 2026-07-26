@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/auth/data/models/change_password_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_response_model.dart';
 import 'package:eventy_customer/features/auth/data/models/request_reset_password_request_model.dart';
@@ -68,5 +69,10 @@ Future<ResetPasswordResponseModel> resetPassword(
   ResetPasswordRequestModel request,
 ) {
   return remote.resetPassword(request);
+}
+
+@override
+Future<void> changePassword(ChangePasswordRequestModel request) {
+  return remote.changePassword(request);
 }
 }

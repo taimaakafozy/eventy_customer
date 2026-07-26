@@ -1,9 +1,12 @@
 import 'package:eventy_customer/core/theme/app_colors.dart';
 import 'package:eventy_customer/core/widgets/app_list_tile_card.dart';
 import 'package:eventy_customer/core/widgets/primary_button.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorite/favorite_cubit.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorite/favorite_state.dart';
 import 'package:eventy_customer/features/services/data/models/available_services_model/service_model.dart';
 import 'package:eventy_customer/features/services/presentation/widgets/services/service_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ServiceCard extends StatefulWidget {
   final ServiceModel service;
@@ -17,7 +20,7 @@ class ServiceCard extends StatefulWidget {
 
 class _ServiceCardState extends State<ServiceCard> {
   bool hovered = false;
-
+  bool _isFavorite = false;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -207,24 +210,65 @@ class _ServiceCardState extends State<ServiceCard> {
 
                     const SizedBox(width: 12),
 
-                    Material(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(14),
+                    BlocConsumer<FavoriteCubit, FavoriteState>(
+                      listener: (context, state) {
+                        if (state is FavoriteSuccess &&
+                            state.targetId == widget.service.id) {
+                          setState(() {
+                            _isFavorite = state.isFavorite;
+                          });
 
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Added to favorites")),
+                          );
+                        }
 
-                        onTap: () {},
-
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-
-                          child: Icon(
-                            Icons.favorite_border,
-                            color: theme.primaryColor,
+                        if (state is FavoriteError &&
+                            state.targetId == widget.service.id) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(state.message)),
+                          );
+                        }
+                      },
+                      builder: (context, state) {
+                        final loading =
+                            state is FavoriteLoading &&
+                            state.targetId == widget.service.id;
+                        return Material(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: loading
+                                ? null
+                                : () {
+                                    context.read<FavoriteCubit>().addToFavorite(
+                                      targetType: "SERVICE",
+                                      targetId: widget.service.id,
+                                    );
+                                  },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: loading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      _isFavorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: _isFavorite
+                                          ? Colors.red
+                                          : theme.primaryColor,
+                                    ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -11,5 +11,9 @@ abstract class EventRepository {
     int limit = 10,
     String sortBy = 'createdAt',
     String order = 'desc',
+    String? status,
+    String? fromDate,
+    String? toDate,
+    bool? archived,
   });
 }
