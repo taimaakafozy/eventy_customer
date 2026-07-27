@@ -11,6 +11,15 @@ import 'package:eventy_customer/features/auth/presentation/blocs/request_reset_p
 import 'package:eventy_customer/features/auth/presentation/blocs/resend_otp_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/reset_password_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/verify_otp_cubit.dart';
+import 'package:eventy_customer/features/complaints/data/datasources/complaint_remote_data_source.dart';
+import 'package:eventy_customer/features/complaints/data/repositories/complaint_repository_impl.dart';
+import 'package:eventy_customer/features/complaints/domain/repositories/complaint_repository.dart';
+import 'package:eventy_customer/features/complaints/domain/usecases/create_complaint_usecase.dart';
+import 'package:eventy_customer/features/complaints/domain/usecases/get_complaint_details_usecase.dart';
+import 'package:eventy_customer/features/complaints/domain/usecases/get_complaints_usecase.dart';
+import 'package:eventy_customer/features/complaints/presentation/blocs/complaint_details/complaint_details_cubit.dart';
+import 'package:eventy_customer/features/complaints/presentation/blocs/complaints_list/complaints_list_cubit.dart';
+import 'package:eventy_customer/features/complaints/presentation/blocs/create_complaint/create_complaint_cubit.dart';
 import 'package:eventy_customer/features/events/data/datasource/event_remote_datasource.dart';
 import 'package:eventy_customer/features/events/data/repository/event_repository_impl.dart';
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
@@ -23,7 +32,10 @@ import 'package:eventy_customer/features/favorites/data/datasource/favorite_remo
 import 'package:eventy_customer/features/favorites/data/repository/favorite_repository_impl.dart';
 import 'package:eventy_customer/features/favorites/domain/repository/favorite_repository.dart';
 import 'package:eventy_customer/features/favorites/domain/usecases/add_to_favorite_usecase.dart';
-import 'package:eventy_customer/features/favorites/presentation/blocs/favorite/favorite_cubit.dart';
+import 'package:eventy_customer/features/favorites/domain/usecases/get_favorites_usecase.dart';
+import 'package:eventy_customer/features/favorites/domain/usecases/remove_from_favorite_usecase.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorite_status/favorite_status_cubit.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorites_list/favorites_list_cubit.dart';
 import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
 import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
 import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
@@ -93,7 +105,7 @@ sl.registerLazySingleton<ResetPasswordUseCase>(
 );
  
   sl.registerLazySingleton<AppCubit>(
-    () => AppCubit(sl(), sl()),
+    () => AppCubit(sl(), sl(),sl()),
   );
  
   sl.registerFactory<LoginCubit>(
@@ -166,7 +178,7 @@ sl.registerFactory<UserProfileCubit>(
     () => GetServiceTypesUseCase(sl()),
   );
 
-  sl.registerFactory<ServiceTypesCubit>(
+  sl.registerLazySingleton<ServiceTypesCubit>(
     () => ServiceTypesCubit(
       sl(),
     ),
@@ -175,7 +187,7 @@ sl.registerFactory<UserProfileCubit>(
   sl.registerLazySingleton<GetAvailableServicesUseCase>(
   () => GetAvailableServicesUseCase(sl()),
 );
-sl.registerFactory<AvailableServicesCubit>(
+sl.registerLazySingleton<AvailableServicesCubit>(
   () => AvailableServicesCubit(sl()),
 );
 
@@ -218,7 +230,7 @@ sl.registerFactory(
 sl.registerFactory<EventBuilderCubit>(() => EventBuilderCubit());
 
 sl.registerLazySingleton(() => GetAllEventsUseCase(sl()));
-sl.registerFactory<GetAllEventsCubit>(() => GetAllEventsCubit(sl()));
+sl.registerLazySingleton<GetAllEventsCubit>(() => GetAllEventsCubit(sl()));
 
 // Favorites
 
@@ -238,10 +250,39 @@ sl.registerLazySingleton(
   ),
 );
 
-sl.registerFactory(
-  () => FavoriteCubit(
-    sl(),
-  ),
+sl.registerLazySingleton<RemoveFromFavoriteUseCase>(
+  () => RemoveFromFavoriteUseCase(sl()),
 );
+
+sl.registerLazySingleton<GetFavoritesUseCase>(
+  () => GetFavoritesUseCase(sl()),
+);
+
+/// ⚠️ Singleton — نسخة واحدة فقط طوال عمر التطبيق (مو Factory)
+sl.registerLazySingleton<FavoriteStatusCubit>(
+  () => FavoriteStatusCubit(sl(), sl(), sl()),
+);
+
+sl.registerLazySingleton<FavoritesListCubit>(
+  () => FavoritesListCubit(sl()),
+);
+
+/// Complaints
+sl.registerLazySingleton<ComplaintRemoteDataSource>(
+  () => ComplaintRemoteDataSourceImpl(sl()),
+);
+
+sl.registerLazySingleton<ComplaintRepository>(
+  () => ComplaintRepositoryImpl(sl()),
+);
+
+sl.registerLazySingleton(() => CreateComplaintUseCase(sl()));
+sl.registerLazySingleton(() => GetComplaintsUseCase(sl()));
+sl.registerLazySingleton(() => GetComplaintDetailsUseCase(sl()));
+
+sl.registerFactory<CreateComplaintCubit>(() => CreateComplaintCubit(sl()));
+sl.registerFactory<ComplaintsListCubit>(() => ComplaintsListCubit(sl()));
+sl.registerFactory<ComplaintDetailsCubit>(() => ComplaintDetailsCubit(sl()));
+
 }
 

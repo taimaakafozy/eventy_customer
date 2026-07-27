@@ -19,10 +19,7 @@ class MyEventsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<GetAllEventsCubit>()..loadEvents(),
-      child: const _MyEventsView(),
-    );
+    return  _MyEventsView();
   }
 }
 
@@ -46,7 +43,7 @@ class _MyEventsViewState extends State<_MyEventsView> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 220) {
-      context.read<GetAllEventsCubit>().loadMore();
+      sl<GetAllEventsCubit>().loadMore();
     }
   }
 
@@ -93,12 +90,12 @@ class _MyEventsViewState extends State<_MyEventsView> {
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, index) {
                 final status = _statusFilters[index];
-                final selected = context.watch<GetAllEventsCubit>().currentStatus == status;
+                final selected = sl<GetAllEventsCubit>().currentStatus == status;
 
                 return FiltersChip(
                   label: status == null ? "All" : EventStatusHelper.displayName(status),
                   selected: selected,
-                  onTap: () => context.read<GetAllEventsCubit>().loadEvents(status: status),
+                  onTap: () => sl<GetAllEventsCubit>().loadEvents(status: status),
                 );
               },
             ),
@@ -106,6 +103,7 @@ class _MyEventsViewState extends State<_MyEventsView> {
           const SizedBox(height: 12),
           Expanded(
             child: BlocBuilder<GetAllEventsCubit, GetAllEventsState>(
+               bloc: sl<GetAllEventsCubit>(),
               builder: (context, state) {
                 if (state is GetAllEventsLoading) {
                   return const Center(child: CircularProgressIndicator());
@@ -114,7 +112,7 @@ class _MyEventsViewState extends State<_MyEventsView> {
                 if (state is GetAllEventsError) {
                   return ErrorView(
                     message: state.message,
-                    onRetry: () => context.read<GetAllEventsCubit>().refresh(),
+                    onRetry: () => sl<GetAllEventsCubit>().refresh(),
                   );
                 }
 
@@ -132,7 +130,7 @@ class _MyEventsViewState extends State<_MyEventsView> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () => context.read<GetAllEventsCubit>().refresh(),
+                    onRefresh: () => sl<GetAllEventsCubit>().refresh(),
                     child: ListView.builder(
                       controller: _scrollController,
                       physics: const BouncingScrollPhysics(),

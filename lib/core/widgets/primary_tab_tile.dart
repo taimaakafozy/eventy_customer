@@ -91,16 +91,16 @@ class PrimaryTabTile extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // if (trailing != null) trailing!,
-                      // if (showArrow && trailing == null)
-                      //   AnimatedRotation(
-                      //     turns: isExpanded ? 0.5 : 0,
-                      //     duration: const Duration(milliseconds: 200),
-                      //     child: Icon(
-                      //       Icons.expand_more,
-                      //       color: theme.primaryColor,
-                      //     ),
-                      //   ),
+                      if (trailing != null) trailing!,
+                      if (showArrow && trailing == null)
+                        AnimatedRotation(
+                          turns: isExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            Icons.expand_more,
+                            color: theme.primaryColor,
+                          ),
+                        ),
                     ],
                   ),
 
@@ -112,7 +112,7 @@ class PrimaryTabTile extends StatelessWidget {
                         curve: Curves.easeInOut,
                         alignment: Alignment.topCenter,
                         child: ConstrainedBox(
-                          constraints: isExpanded
+                          constraints: isExpanded 
                               ? const BoxConstraints()
                               : const BoxConstraints(maxHeight: 0),
                           child: Padding(

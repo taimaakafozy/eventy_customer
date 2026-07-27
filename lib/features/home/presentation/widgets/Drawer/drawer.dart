@@ -5,7 +5,9 @@ import 'package:eventy_customer/core/widgets/app_confirmation_dialog.dart';
 import 'package:eventy_customer/core/widgets/primary_tab_tile.dart';
 import 'package:eventy_customer/features/auth/presentation/blocs/app_cubit.dart';
 import 'package:eventy_customer/features/auth/presentation/pages/change_password_page.dart';
+import 'package:eventy_customer/features/complaints/presentation/pages/complaints_page.dart';
 import 'package:eventy_customer/features/events/presentation/pages/my_events_page.dart';
+import 'package:eventy_customer/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:eventy_customer/features/user_profile/presentation/blocs/user_profile_cubit.dart';
 import 'package:eventy_customer/features/user_profile/presentation/blocs/user_profile_state.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +50,12 @@ class AppDrawer extends StatelessWidget {
                       icon: Icons.favorite_border_rounded,
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: navigate to favorites page عند بناء الفيتشر
+                       Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const FavoritesPage(),
+                          ),
+                        );
                       },
                     ),
                     const Divider(height: 24),
@@ -79,12 +86,25 @@ class AppDrawer extends StatelessWidget {
                     _ThemeTile(),
                     const Divider(height: 24),
                     _SectionLabel(title: "SUPPORT"),
+                    // PrimaryTabTile(
+                    //   title: "Help & Support",
+                    //   icon: Icons.support_agent_rounded,
+                    //   onTap: () {
+                    //     Navigator.pop(context);
+                    //     // TODO: navigate to support page
+                    //   },
+                    // ),
                     PrimaryTabTile(
-                      title: "Help & Support",
-                      icon: Icons.support_agent_rounded,
+                      title: "My Complaints",
+                      icon: Icons.report_problem_outlined,
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: navigate to support page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ComplaintsPage(),
+                          ),
+                        );
                       },
                     ),
                     PrimaryTabTile(

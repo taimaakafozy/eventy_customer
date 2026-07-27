@@ -18,6 +18,8 @@ class PickLocationPage extends StatefulWidget {
 
 class _PickLocationPageState extends State<PickLocationPage> {
   final MapController _mapController = MapController();
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
 
   LatLng? _center;
   String? _addressPreview;
@@ -61,12 +63,15 @@ class _PickLocationPageState extends State<PickLocationPage> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         throw Exception("Location permission denied");
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       _center = LatLng(position.latitude, position.longitude);
@@ -83,7 +88,10 @@ class _PickLocationPageState extends State<PickLocationPage> {
 
       await _resolveAddress(_center!);
     } catch (e) {
-      _center ??= const LatLng(31.9539, 35.9106); // Amman كموقع افتراضي عند الفشل
+      _center ??= const LatLng(
+        31.9539,
+        35.9106,
+      ); // Amman كموقع افتراضي عند الفشل
 
       if (mounted) {
         setState(() => _isLoadingLocation = false);
@@ -112,14 +120,18 @@ class _PickLocationPageState extends State<PickLocationPage> {
     setState(() => _isResolvingAddress = true);
 
     try {
-      final placemarks = await placemarkFromCoordinates(point.latitude, point.longitude);
+      final placemarks = await placemarkFromCoordinates(
+        point.latitude,
+        point.longitude,
+      );
 
       String name = "";
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        name = [place.locality, place.country]
-            .where((e) => e != null && e.trim().isNotEmpty)
-            .join(", ");
+        name = [
+          place.locality,
+          place.country,
+        ].where((e) => e != null && e.trim().isNotEmpty).join(", ");
       }
 
       if (mounted) {
@@ -148,6 +160,41 @@ class _PickLocationPageState extends State<PickLocationPage> {
     });
   }
 
+  Future<void> _searchAddress(String query) async {
+    if (query.trim().isEmpty) return;
+    setState(() => _isSearching = true);
+
+    try {
+      final locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        final result = LatLng(
+          locations.first.latitude,
+          locations.first.longitude,
+        );
+        _center = result;
+
+        if (_mapReady) _mapController.move(result, 16);
+        await _resolveAddress(result);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Location not found, try a different search"),
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't search for this location")),
+        );
+      }
+    }
+
+    if (mounted) setState(() => _isSearching = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -166,6 +213,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
               initialCenter: _center!,
               initialZoom: 15,
               onPositionChanged: _onMapEvent,
+
               /// ⚠️ جديد: يُستدعى مرة واحدة فقط بعد أن تصبح الخريطة جاهزة فعليًا
               onMapReady: () {
                 _mapReady = true;
@@ -189,7 +237,7 @@ class _PickLocationPageState extends State<PickLocationPage> {
             ),
           ),
           Positioned(
-            top: 16,
+            top: 76,
             left: 16,
             right: 16,
             child: Container(
@@ -198,21 +246,92 @@ class _PickLocationPageState extends State<PickLocationPage> {
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(.08), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: Row(
                 children: [
-                  Icon(Icons.place_rounded, size: 18, color: theme.primaryColor),
+                  Icon(
+                    Icons.place_rounded,
+                    size: 18,
+                    color: theme.primaryColor,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _isResolvingAddress ? "Locating address..." : (_addressPreview ?? "Move the map to select"),
+                      _isResolvingAddress
+                          ? "Locating address..."
+                          : (_addressPreview ?? "Move the map to select"),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: theme.primaryColor,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: _searchAddress,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Search a place or address...",
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_isSearching)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      onPressed: () => _searchAddress(_searchController.text),
+                    ),
                 ],
               ),
             ),

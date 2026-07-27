@@ -1,4 +1,5 @@
 import 'package:eventy_customer/features/auth/domain/usecases/logout_use_case.dart';
+import 'package:eventy_customer/features/favorites/presentation/blocs/favorite_status/favorite_status_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/secure_storage_service.dart';
@@ -24,11 +25,11 @@ class LogoutError extends AppState {
 class AppCubit extends Cubit<AppState> {
   final SecureStorageService storage;
   final LogoutUseCase logoutUseCase;
-  // String? role;
-
+final FavoriteStatusCubit favoriteStatusCubit;
   AppCubit(
     this.storage,
-     this.logoutUseCase
+     this.logoutUseCase,
+     this.favoriteStatusCubit,
   ) : super(AppInitial()){
   print("APP CUBIT CREATED: ${identityHashCode(this)}");
 }
@@ -37,6 +38,7 @@ class AppCubit extends Cubit<AppState> {
 
     if (token != null && token.isNotEmpty) {
       emit(AppAuthenticated());
+      await favoriteStatusCubit.loadFavoriteIds();
     } else {
       emit(AppUnauthenticated());
     }
@@ -44,6 +46,7 @@ class AppCubit extends Cubit<AppState> {
 
   void setAuthenticated() {
     emit(AppAuthenticated());
+    favoriteStatusCubit.loadFavoriteIds();
   }
 
   void setUnauthenticated() {
@@ -62,12 +65,16 @@ class AppCubit extends Cubit<AppState> {
 
     await storage.deleteToken();
     await storage.deleteRefreshToken();
+      favoriteStatusCubit.clear();
+
 
     emit(LogoutSuccess("تم تسجيل الخروج بنجاح"));
     emit(AppUnauthenticated());
   } catch (e) {
     await storage.deleteToken();
     await storage.deleteRefreshToken();
+    favoriteStatusCubit.clear();
+
 
     emit(LogoutError("تم تسجيل الخروج محلياً"));
     emit(AppUnauthenticated());
