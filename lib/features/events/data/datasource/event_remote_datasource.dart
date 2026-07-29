@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/create_event_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
@@ -24,6 +25,11 @@ abstract class EventRemoteDataSource {
     String eventId,
     QuoteDecisionRequestModel request,
   );
+
+  Future<void> cancelEvent(
+  String eventId,
+  CancelEventRequestModel request,
+);
 }
 
 class EventRemoteDataSourceImpl implements EventRemoteDataSource {
@@ -109,4 +115,23 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
       throw Exception(data['message'] ?? 'Failed to submit your decision');
     }
   }
+
+  @override
+Future<void> cancelEvent(
+  String eventId,
+  CancelEventRequestModel request,
+) async {
+  final response = await client.dio.patch(
+    'events/$eventId/cancel',
+    data: request.toJson(),
+  );
+
+  final data = response.data;
+
+  if (data['success'] != true) {
+    throw Exception(
+      data['message'] ?? 'Failed to cancel event',
+    );
+  }
+}
 }

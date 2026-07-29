@@ -23,10 +23,12 @@ import 'package:eventy_customer/features/complaints/presentation/blocs/create_co
 import 'package:eventy_customer/features/events/data/datasource/event_remote_datasource.dart';
 import 'package:eventy_customer/features/events/data/repository/event_repository_impl.dart';
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
+import 'package:eventy_customer/features/events/domain/usecases/cancel_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/get_all_events_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/get_event_bookings_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/submit_quote_decisions_usecase.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
@@ -245,6 +247,17 @@ sl.registerFactoryParam<EventBookingsDetailsCubit, String, void>(
 
 sl.registerFactoryParam<QuoteDecisionCubit, String, void>(
   (eventId, _) => QuoteDecisionCubit(sl(), eventId),
+);
+sl.registerLazySingleton(
+  () => CancelEventUseCase(
+    sl(),
+  ),
+);
+
+sl.registerFactory(
+  () => CancelEventCubit(
+    sl(),
+  ),
 );
 
 // Favorites

@@ -1,10 +1,16 @@
 import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/theme/app_colors.dart';
+import 'package:eventy_customer/core/utils/booking_status_helper.dart';
 import 'package:eventy_customer/core/utils/date_format_helper.dart';
+import 'package:eventy_customer/core/widgets/app_confirmation_dialog.dart';
 import 'package:eventy_customer/core/widgets/snackbar_helper.dart';
+import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_state.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_state.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/get_All_Events/Get_All_Events_Cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/quote_decision/quote_decision_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/quote_decision/quote_decision_state.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/booking_payment_qr.dart';
@@ -25,6 +31,7 @@ class EventBookingsDetailsPage extends StatelessWidget {
           create: (_) => sl<EventBookingsDetailsCubit>(param1: eventId)..load(),
         ),
         BlocProvider(create: (_) => sl<QuoteDecisionCubit>(param1: eventId)),
+        BlocProvider(create: (_) => sl<CancelEventCubit>()),
       ],
       child: const _EventBookingsView(),
     );
@@ -66,6 +73,38 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
         _decisions[bookingId] = value;
       }
     });
+  }
+
+  Future<void> _showCancelDialog(String eventId) async {
+    final reasonController = TextEditingController();
+    showDialog(
+  context: context,
+  builder: (_) => AppConfirmationDialog(
+    title: "Cancel Event",
+    message: "Are you sure?",
+    confirmText: "Cancel Event",
+    icon: Icons.cancel_rounded,
+    iconColor: AppColors.error,
+    confirmColor: AppColors.error,
+    content: TextField(
+  controller: reasonController,
+  maxLines: 3,
+  textInputAction: TextInputAction.done,
+  decoration: const InputDecoration(
+    labelText: "Reason",
+    hintText: "Cancellation reason",
+  ),
+),
+    onConfirm: () {
+      context.read<CancelEventCubit>().cancelEvent(
+              eventId: eventId,
+              reason: CancelEventRequestModel(
+                reason: reasonController.text.trim(),
+              ),
+            );
+    },
+  ),
+);
   }
 
   Future<void> _rejectAll(EventBookingsDetailsModel details) async {
@@ -180,30 +219,69 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: const Text("Event Bookings")),
-      body: BlocListener<QuoteDecisionCubit, QuoteDecisionState>(
-        listener: (context, state) {
-          if (state is QuoteDecisionSuccess) {
-            setState(() {
-              _decisions.clear();
-              _reasonControllers.clear();
-            });
-            context.read<EventBookingsDetailsCubit>().load();
-            showAppSnackBar(
-              context,
-              message: state.message,
-              type: SnackBarType.success,
-            );
-            context.read<QuoteDecisionCubit>().reset();
-          }
-          if (state is QuoteDecisionError) {
-            showAppSnackBar(
-              context,
-              message: state.message,
-              type: SnackBarType.error,
-            );
-            context.read<QuoteDecisionCubit>().reset();
-          }
-        },
+
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<QuoteDecisionCubit, QuoteDecisionState>(
+            listener: (context, state) {
+              if (state is QuoteDecisionSuccess) {
+                setState(() {
+                  _decisions.clear();
+                  _reasonControllers.clear();
+                });
+
+                context.read<EventBookingsDetailsCubit>().load();
+
+                showAppSnackBar(
+                  context,
+                  message: state.message,
+                  type: SnackBarType.success,
+                );
+
+                context.read<QuoteDecisionCubit>().reset();
+              }
+
+              if (state is QuoteDecisionError) {
+                showAppSnackBar(
+                  context,
+                  message: state.message,
+                  type: SnackBarType.error,
+                );
+
+                context.read<QuoteDecisionCubit>().reset();
+              }
+            },
+          ),
+
+          BlocListener<CancelEventCubit, CancelEventState>(
+            listener: (context, state) {
+             if (state is CancelEventSuccess) {
+  showAppSnackBar(
+    context,
+    message: state.message,
+    type: SnackBarType.success,
+  );
+
+  sl<GetAllEventsCubit>().refresh();
+
+  context.read<EventBookingsDetailsCubit>().load();
+
+  context.read<CancelEventCubit>().reset();
+}
+
+              if (state is CancelEventError) {
+                showAppSnackBar(
+                  context,
+                  message: state.message,
+                  type: SnackBarType.error,
+                );
+
+                context.read<CancelEventCubit>().reset();
+              }
+            },
+          ),
+        ],
+
         child: BlocBuilder<EventBookingsDetailsCubit, EventBookingsDetailsState>(
           builder: (context, state) {
             if (state is EventBookingsDetailsLoading) {
@@ -231,26 +309,50 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
             }
 
             final details = (state as EventBookingsDetailsLoaded).details;
-
+final canCancel =
+    details.status != "CANCELLED" &&
+    details.status != "COMPLETED";
             return RefreshIndicator(
               onRefresh: () => context.read<EventBookingsDetailsCubit>().load(),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 children: [
-                  Text(
-                    details.name,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          details.name,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      if (canCancel)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                          ),
+                          onPressed: () {
+                            _showCancelDialog(details.id);
+                          },
+                          icon: const Icon(Icons.cancel_outlined, size: 18),
+                          label: const Text("Cancel"),
+                        ),
+                    ],
                   ),
+
                   const SizedBox(height: 4),
+
                   Text(
                     "${DateFormatHelper.toDisplayDate(details.eventDate)} · ${details.eventStartTime} - ${details.eventEndTime}",
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(.6),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
                   if (details.hasAnyDecisionPending)
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -309,6 +411,7 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
                         ],
                       ),
                     ),
+
                   ...details.bookings.map(
                     (b) => _BookingCard(
                       booking: b,
@@ -330,6 +433,7 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
           },
         ),
       ),
+
       bottomNavigationBar:
           BlocBuilder<EventBookingsDetailsCubit, EventBookingsDetailsState>(
             builder: (context, state) {
@@ -358,7 +462,9 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
                             child: const Text("Reject All"),
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
@@ -367,8 +473,8 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
                                 : () => _confirmSelection(state.details),
                             child: isSubmitting
                                 ? const SizedBox(
-                                    height: 20,
                                     width: 20,
+                                    height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       color: Colors.white,
@@ -405,66 +511,10 @@ class _BookingCard extends StatelessWidget {
     this.reasonController,
   });
 
- Color _statusColor(String status, ThemeData theme) {
-  switch (status.toUpperCase()) {
-    case "PENDING":
-      return AppColors.warning;
-
-    case "QUOTE_SENT":
-      return theme.primaryColor;
-
-    case "CONFIRMED":
-      return AppColors.success;
-
-    case "IN_PROGRESS":
-      return AppColors.in_progress;
-
-    case "COMPLETED":
-      return AppColors.success;
-
-    case "REJECTED":
-      return AppColors.error;
-
-    case "CANCELLED":
-      return AppColors.error;
-
-    default:
-      return AppColors.grey;
-  }
-}
-
-String _displayStatus(String status) {
-  switch (status.toUpperCase()) {
-    case "PENDING":
-      return "Pending";
-
-    case "QUOTE_SENT":
-      return "Quote Sent";
-
-    case "CONFIRMED":
-      return "Confirmed";
-
-    case "REJECTED":
-      return "Rejected";
-
-    case "IN_PROGRESS":
-      return "In Progress";
-
-    case "COMPLETED":
-      return "Completed";
-
-    case "CANCELLED":
-      return "Cancelled";
-
-    default:
-      return status;
-  }
-}
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusColor = _statusColor(booking.status, theme);
+    final statusColor = BookingStatusHelper.color(booking.status);
     final isActionable = onAccept != null;
 
     return Container(
@@ -535,11 +585,12 @@ String _displayStatus(String status) {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(.12),
+                  color: statusColor.withOpacity(.10),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: statusColor.withOpacity(.35)),
                 ),
                 child: Text(
-                  _displayStatus(booking.status),
+                  BookingStatusHelper.displayName(booking.status),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w700,
@@ -667,13 +718,13 @@ String _displayStatus(String status) {
                       color: AppColors.error.withOpacity(.2),
                     ),
                   ),
-                ), 
+                ),
               ),
             ],
           ],
           if (booking.status.toUpperCase() == "CONFIRMED" &&
-    booking.payment != null)
-  BookingPaymentQr(payment: booking.payment!)
+              booking.payment != null)
+            BookingPaymentQr(payment: booking.payment!),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
 import 'package:eventy_customer/features/events/data/models/quote_decision_request_model.dart';
@@ -52,4 +53,14 @@ class EventRepositoryImpl
   @override
   Future<void> submitQuoteDecisions(String eventId, QuoteDecisionRequestModel request) =>
       remoteDataSource.submitQuoteDecisions(eventId, request);
+
+      @override
+Future<void> cancelEvent(
+  String eventId,
+  CancelEventRequestModel request,
+) =>
+    remoteDataSource.cancelEvent(
+      eventId,
+      request,
+    );
 }
