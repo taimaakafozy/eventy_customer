@@ -25,9 +25,13 @@ import 'package:eventy_customer/features/events/data/repository/event_repository
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
 import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/get_all_events_usecase.dart';
+import 'package:eventy_customer/features/events/domain/usecases/get_event_bookings_usecase.dart';
+import 'package:eventy_customer/features/events/domain/usecases/submit_quote_decisions_usecase.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/get_All_Events/Get_All_Events_Cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/quote_decision/quote_decision_cubit.dart';
 import 'package:eventy_customer/features/favorites/data/datasource/favorite_remote_datasource.dart';
 import 'package:eventy_customer/features/favorites/data/repository/favorite_repository_impl.dart';
 import 'package:eventy_customer/features/favorites/domain/repository/favorite_repository.dart';
@@ -231,6 +235,17 @@ sl.registerFactory<EventBuilderCubit>(() => EventBuilderCubit());
 
 sl.registerLazySingleton(() => GetAllEventsUseCase(sl()));
 sl.registerLazySingleton<GetAllEventsCubit>(() => GetAllEventsCubit(sl()));
+
+sl.registerLazySingleton(() => GetEventBookingsUseCase(sl()));
+sl.registerLazySingleton(() => SubmitQuoteDecisionsUseCase(sl()));
+
+sl.registerFactoryParam<EventBookingsDetailsCubit, String, void>(
+  (eventId, _) => EventBookingsDetailsCubit(sl(), eventId),
+);
+
+sl.registerFactoryParam<QuoteDecisionCubit, String, void>(
+  (eventId, _) => QuoteDecisionCubit(sl(), eventId),
+);
 
 // Favorites
 

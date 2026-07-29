@@ -1,13 +1,13 @@
 import 'package:eventy_customer/features/events/data/models/create_event_model.dart';
+import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
+import 'package:eventy_customer/features/events/data/models/quote_decision_request_model.dart';
 
 import '../../../../core/network/dio_client.dart';
 
 abstract class EventRemoteDataSource {
-  Future<CreateEventResponse> createEvent(
-    CreateEventRequest request,
-  );
-   Future<GetAllEventsResponse> getAllEvents({
+  Future<CreateEventResponse> createEvent(CreateEventRequest request);
+  Future<GetAllEventsResponse> getAllEvents({
     int page = 1,
     int limit = 10,
     String sortBy = 'createdAt',
@@ -17,37 +17,34 @@ abstract class EventRemoteDataSource {
     String? toDate,
     bool? archived,
   });
+
+  Future<EventBookingsDetailsModel> getEventBookings(String eventId);
+
+  Future<void> submitQuoteDecisions(
+    String eventId,
+    QuoteDecisionRequestModel request,
+  );
 }
 
-class EventRemoteDataSourceImpl
-    implements EventRemoteDataSource {
+class EventRemoteDataSourceImpl implements EventRemoteDataSource {
   final DioClient client;
 
   EventRemoteDataSourceImpl(this.client);
 
   @override
-  Future<CreateEventResponse> createEvent(
-    CreateEventRequest request,
-  ) async {
-    final response = await client.dio.post(
-      'events',
-      data: request.toJson(),
-    );
+  Future<CreateEventResponse> createEvent(CreateEventRequest request) async {
+    final response = await client.dio.post('events', data: request.toJson());
 
     final data = response.data;
 
     if (data['success'] != true) {
-      throw Exception(
-        data['message'] ??
-            'Failed to create event',
-      );
+      throw Exception(data['message'] ?? 'Failed to create event');
     }
 
-    return CreateEventResponse.fromJson(
-      data,
-    );
+    return CreateEventResponse.fromJson(data);
   }
-   @override
+
+  @override
   Future<GetAllEventsResponse> getAllEvents({
     int page = 1,
     int limit = 10,
@@ -56,7 +53,7 @@ class EventRemoteDataSourceImpl
     String? status,
     String? fromDate,
     String? toDate,
-    bool ?archived,
+    bool? archived,
   }) async {
     final query = <String, dynamic>{
       'page': page,
@@ -78,5 +75,38 @@ class EventRemoteDataSourceImpl
     }
 
     return GetAllEventsResponse.fromJson(data);
+  }
+
+  @override
+  Future<EventBookingsDetailsModel> getEventBookings(String eventId) async {
+    final response = await client.dio.get('events/$eventId/bookings');
+    final data = response.data;
+
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to load event bookings');
+    }
+
+    return EventBookingsDetailsModel.fromJson(data['data']);
+  }
+
+  @override
+  Future<void> submitQuoteDecisions(
+    String eventId,
+    QuoteDecisionRequestModel request,
+  ) async {
+    print("========== REQUEST ==========");
+    print(client.dio.options.baseUrl);
+    print('events/$eventId/bookings/quote-decisions');
+    print(request.toJson());
+    final response = await client.dio.patch(
+      'events/$eventId/bookings/quote-decisions',
+      data: request.toJson(),
+    );
+
+    final data = response.data;
+
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to submit your decision');
+    }
   }
 }

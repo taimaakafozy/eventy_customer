@@ -8,11 +8,12 @@ import 'package:eventy_customer/features/events/data/models/get_all_events_model
 import 'package:eventy_customer/features/events/presentation/blocs/get_All_Events/Get_All_Events_Cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/get_All_Events/get_all_events_state.dart';
 import 'package:eventy_customer/features/events/presentation/pages/create_event_page.dart';
+import 'package:eventy_customer/features/events/presentation/pages/event_bookings_details_page.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-const List<String?> _statusFilters = [null, "ACTIVE", "DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+const List<String?> _statusFilters = [null, "DRAFT", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 
 class MyEventsPage extends StatelessWidget {
   const MyEventsPage({super.key});
@@ -20,7 +21,7 @@ class MyEventsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return  _MyEventsView();
-  }
+  }  
 }
 
 class _MyEventsView extends StatefulWidget {
@@ -143,7 +144,12 @@ class _MyEventsViewState extends State<_MyEventsView> {
                             child: Center(child: CircularProgressIndicator()),
                           );
                         }
-                        return EventCard(event: filtered[index]);
+                        return EventCard(event: filtered[index], onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => EventBookingsDetailsPage(eventId: filtered[index].id)),
+                          );
+                        });
                       },
                     ),
                   );

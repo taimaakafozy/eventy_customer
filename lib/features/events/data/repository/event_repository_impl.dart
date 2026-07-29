@@ -1,4 +1,6 @@
+import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
+import 'package:eventy_customer/features/events/data/models/quote_decision_request_model.dart';
 
 import '../../domain/repository/event_repository.dart';
 import '../datasource/event_remote_datasource.dart';
@@ -43,4 +45,11 @@ class EventRepositoryImpl
       archived: archived,
     );
   }
+
+  @override
+  Future<EventBookingsDetailsModel> getEventBookings(String eventId) => remoteDataSource.getEventBookings(eventId);
+
+  @override
+  Future<void> submitQuoteDecisions(String eventId, QuoteDecisionRequestModel request) =>
+      remoteDataSource.submitQuoteDecisions(eventId, request);
 }

@@ -75,14 +75,14 @@ class EventCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
+                    ), 
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 5,
                     ),
-                    decoration: BoxDecoration(
+                    decoration: BoxDecoration(   
                       color: statusColor.withOpacity(.12),
                       borderRadius: BorderRadius.circular(20),
                     ),

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  
-    static const Color primary = Color(0xFF533372);
-     static const Color gold = Color(0xFFac8056);
-
+  static const Color primary = Color(0xFF533372);
+  static const Color gold = Color(0xFFac8056);
 
   // Softer Purple
   static const Color secondary = Color(0xFF8E6CCF);
@@ -42,4 +40,5 @@ class AppColors {
   static const Color success = Color(0xFF4CAF50);
   static const Color error = Color(0xFFE53935);
   static const Color warning = Color(0xFFFFB300);
+  static const Color in_progress = Color(0xFF2563EB);
 }
