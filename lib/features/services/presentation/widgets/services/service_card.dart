@@ -75,61 +75,66 @@ class _ServiceCardState extends State<ServiceCard> {
                 Stack(
                   children: [
                     ServiceImage(service: widget.service),
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        child: const Text(
-                          "ACTIVE",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
+
+                    // / ⚠️ جديد: شعار مزوّد الخدمة — بادج دائري أعلى يسار الصورة
+                    // if (widget.service.serviceLogo != null)
+                    //   Positioned(
+                    //     top: 16,
+                    //     left: 16,
+                    //     child: Container(
+                    //       width: 46,
+                    //       height: 46,
+                    //       clipBehavior: Clip.antiAlias,
+                    //       decoration: BoxDecoration(
+                    //         shape: BoxShape.circle,
+                    //         border: Border.all(color: Colors.white, width: 2),
+                    //         boxShadow: [
+                    //           BoxShadow(
+                    //             color: Colors.black.withOpacity(.15),
+                    //             blurRadius: 6,
+                    //           ),
+                    //         ],
+                    //       ),
+                    //       child: Image.network(
+                    //         widget.service.serviceLogo!,
+                    //         fit: BoxFit.cover,
+                    //         errorBuilder: (_, __, ___) =>
+                    //             Container(color: Colors.white),
+                    //       ),
+                    //     ),
+                    //   ),
+
                     Positioned(
                       right: 8,
-                      bottom: 8,
+                      top: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black45,
-                          borderRadius: BorderRadius.circular(40),
+                          color: theme.cardColor.withOpacity(.95),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.star_rounded,
-                              color: Colors.amber,
+                              color: AppColors.warning,
                               size: 18,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               widget.service.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               "(${widget.service.totalReviews})",
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],

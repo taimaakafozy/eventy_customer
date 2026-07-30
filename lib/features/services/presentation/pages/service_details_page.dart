@@ -1,8 +1,17 @@
 import 'package:eventy_customer/core/theme/app_colors.dart';
 import 'package:eventy_customer/core/utils/date_format_helper.dart';
 import 'package:eventy_customer/core/utils/service_type_helper.dart';
+import 'package:eventy_customer/core/widgets/snackbar_helper.dart';
+import 'package:eventy_customer/features/events/data/models/add_service_booking_model.dart';
+import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/add_service_to_event/add_service_to_event_cubit.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/add_service_to_event/add_service_to_event_state.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_state.dart';
+import 'package:eventy_customer/features/events/presentation/pages/create_event_page.dart';
+import 'package:eventy_customer/features/events/presentation/pages/event_bookings_details_page.dart';
+import 'package:eventy_customer/features/events/presentation/pages/select_event_for_booking_page.dart';
+import 'package:eventy_customer/features/services/data/models/service_details_model.dart';
 import 'package:eventy_customer/features/services/domain/validators/service_time_matcher.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_state.dart';
@@ -18,14 +27,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ServiceDetailsPage extends StatefulWidget {
   final String serviceId;
 
-  /// وضع الاختيار — يُستخدم فقط أثناء إنشاء/تعديل مناسبة، ويتطلب EventBuilderCubit بالـ context
+  /// true عند أي رحلة حجز (إنشاء مناسبة جديدة أو إضافة لمناسبة موجودة)
   final bool selectable;
 
-  /// بيانات المناسبة — تُستخدم لفلترة التوفر ومطابقة الوقت تلقائيًا
+  /// بيانات المناسبة (تُستخدم لفحص التوفر بالتاريخ/الوقت في كلا وضعي الحجز)
   final DateTime? eventDate;
   final String? eventStartTime;
   final String? eventEndTime;
   final int? eventGuests;
+
+  /// ⚠️ جديد: عند تمرير قيمة هنا، الصفحة بوضع "إضافة لمناسبة موجودة"
+  /// (مو إنشاء مناسبة جديدة) — هذا هو المصدر الوحيد للحقيقة لتحديد الوضع
+  final String? addToEventId;
+  final String? addToEventName;
 
   const ServiceDetailsPage({
     super.key,
@@ -35,6 +49,8 @@ class ServiceDetailsPage extends StatefulWidget {
     this.eventStartTime,
     this.eventEndTime,
     this.eventGuests,
+    this.addToEventId,
+    this.addToEventName,
   });
 
   @override
@@ -42,26 +58,110 @@ class ServiceDetailsPage extends StatefulWidget {
 }
 
 class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
+  /// اختيارات محلية لوضع "إضافة لمناسبة موجودة" فقط (خدمة واحدة، بدون EventBuilderCubit)
+  final Map<String, int> _localSubServices = {};
+  bool _localWholeServiceSelected = false;
+
+  bool get _isAddToEventFlow => widget.addToEventId != null;
+  bool get _isCreationFlow => widget.selectable && !_isAddToEventFlow;
+  bool get _selectableUi => _isCreationFlow || _isAddToEventFlow;
+  bool get _hasEventContext => widget.eventDate != null;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ServiceDetailsCubit>().loadService(
-            widget.serviceId,
-            date: widget.eventDate != null ? DateFormatHelper.toIsoDateOnly(widget.eventDate!) : null,
-          );
+        widget.serviceId,
+        date: widget.eventDate != null
+            ? DateFormatHelper.toIsoDateOnly(widget.eventDate!)
+            : null,
+      );
     });
+  }
+
+  ServiceTimeMatchResult? _timeMatchFor(ServiceDetailsModel service) {
+    if (!_hasEventContext ||
+        widget.eventStartTime == null ||
+        widget.eventEndTime == null)
+      return null;
+    return ServiceTimeMatcher.match(
+      availability: service.availability,
+      eventStartTime: widget.eventStartTime!,
+      eventEndTime: widget.eventEndTime!,
+    );
+  }
+
+  bool _guestsOk(ServiceDetailsModel service) {
+    return !(service.maxCapacity != null &&
+        widget.eventGuests != null &&
+        widget.eventGuests! > service.maxCapacity!);
+  }
+
+  void _submitAddToEvent(
+    BuildContext context,
+    ServiceDetailsModel service,
+    ServiceTimeMatchResult? timeMatch,
+  ) {
+    final items = <AddServiceBookingItem>[];
+
+    for (final entry in _localSubServices.entries) {
+      items.add(
+        AddServiceBookingItem(
+          subServiceId: entry.key,
+          quantity: entry.value,
+          customerNotes: "",
+        ),
+      );
+    }
+
+    final request = AddServiceBookingRequestModel(
+      serviceId: service.id,
+      timeSlotId: timeMatch?.timeSlotId,
+      items: items,
+    );
+
+    context.read<AddServiceToEventCubit>().submit(
+      widget.addToEventId!,
+      request,
+    );
+  }
+
+  void _onAddToEventSuccess(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Added to Event! 🎉"),
+        content: const Text(
+          "Your request has been sent to the provider. You'll be notified once they respond.",
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(); // إغلاق الـ Dialog
+              Navigator.of(
+                context,
+              ).pop(true); // رجوع لصفحة تفاصيل المناسبة + طلب تحديث
+            },
+            child: const Text("Got it"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("SERVICE DETAILS PAGE");
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: BlocBuilder<ServiceDetailsCubit, ServiceDetailsState>(
         builder: (context, state) {
-          if (state is ServiceDetailsLoading || state is ServiceDetailsInitial) {
+          if (state is ServiceDetailsLoading ||
+              state is ServiceDetailsInitial) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -72,15 +172,22 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.wifi_off_rounded, size: 60, color: theme.disabledColor),
+                    Icon(
+                      Icons.wifi_off_rounded,
+                      size: 60,
+                      color: theme.disabledColor,
+                    ),
                     const SizedBox(height: 14),
                     Text(state.message, textAlign: TextAlign.center),
                     const SizedBox(height: 18),
                     ElevatedButton.icon(
-                      onPressed: () => context.read<ServiceDetailsCubit>().loadService(
+                      onPressed: () =>
+                          context.read<ServiceDetailsCubit>().loadService(
                             widget.serviceId,
                             date: widget.eventDate != null
-                                ? DateFormatHelper.toIsoDateOnly(widget.eventDate!)
+                                ? DateFormatHelper.toIsoDateOnly(
+                                    widget.eventDate!,
+                                  )
                                 : null,
                           ),
                       icon: const Icon(Icons.refresh),
@@ -93,30 +200,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
           }
 
           final service = (state as ServiceDetailsLoaded).service;
-
-          /// ⚠️ مطابقة الوقت تُحسب فقط أثناء إنشاء مناسبة (selectable + eventDate)
-          final hasEventContext = widget.selectable && widget.eventDate != null;
-
-          ServiceTimeMatchResult? timeMatch;
-          if (hasEventContext && widget.eventStartTime != null && widget.eventEndTime != null) {
-            timeMatch = ServiceTimeMatcher.match(
-              availability: service.availability,
-              eventStartTime: widget.eventStartTime!,
-              eventEndTime: widget.eventEndTime!,
-            );
-          }
-
-          final bool dayOnlyAvailable = service.isAvailableForFilteredDate;
-
-          final bool guestsOk = !(service.maxCapacity != null &&
-              widget.eventGuests != null &&
-              widget.eventGuests! > service.maxCapacity!);
-
-          final bool timeOk = hasEventContext ? (timeMatch?.fits ?? dayOnlyAvailable) : true;
-          final bool canBook = timeOk && guestsOk;
+          final timeMatch = _timeMatchFor(service);
+          final dayOnlyAvailable = service.isAvailableForFilteredDate;
+          final guestsOk = _guestsOk(service);
+          final timeOk = _hasEventContext
+              ? (timeMatch?.fits ?? dayOnlyAvailable)
+              : true;
+          final canBook = timeOk && guestsOk;
 
           return RefreshIndicator(
-            onRefresh: () async => context.read<ServiceDetailsCubit>().refresh(),
+            onRefresh: () async =>
+                context.read<ServiceDetailsCubit>().refresh(),
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
@@ -130,7 +224,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                     child: CircleAvatar(
                       backgroundColor: Colors.black.withOpacity(.35),
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 17),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 17,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
@@ -152,65 +250,174 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (service.serviceLogo != null)
+                              Container(
+                                width: 56,
+                                height: 56,
+                                margin: const EdgeInsets.only(right: 12),
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.scaffoldBackgroundColor,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(.12),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                                child: Image.network(
+                                  service.serviceLogo!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: theme.primaryColor.withOpacity(.1),
+                                    child: Icon(
+                                      Icons.business,
+                                      color: theme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             Expanded(
-                              child: Text(
-                                service.provider.businessName,
-                                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          service.provider.businessName,
+                                          style: theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                      ),
+                                      if (service.isActive)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.success
+                                                .withOpacity(.12),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "Active",
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: AppColors.success,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        ServiceTypeHelper.icon(
+                                          service.serviceType.name,
+                                        ),
+                                        size: 16,
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(.55),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        ServiceTypeHelper.displayName(
+                                          service.serviceType.name,
+                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(.65),
+                                            ),
+                                      ),
+                                      if (service.isPackaged) ...[
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 9,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.gold.withOpacity(
+                                              .14,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "Package",
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: AppColors.goldText,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                            if (service.isActive)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.success.withOpacity(.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "Active",
-                                  style: theme.textTheme.bodySmall
-                                      ?.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              ServiceTypeHelper.icon(service.serviceType.name),
-                              size: 16,
-                              color: theme.colorScheme.onSurface.withOpacity(.55),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              ServiceTypeHelper.displayName(service.serviceType.name),
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.65)),
-                            ),
-                            if (service.isPackaged) ...[
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.gold.withOpacity(.14),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "Package",
-                                  style: theme.textTheme.bodySmall
-                                      ?.copyWith(color: AppColors.goldText, fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 18),
+
+                        /// بانر "إضافة إلى: اسم المناسبة" — فقط بوضع الإضافة لمناسبة موجودة
+                        if (_isAddToEventFlow) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor.withOpacity(.08),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.event_note_rounded,
+                                  color: theme.primaryColor,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    "Adding to: ${widget.addToEventName ?? 'your event'}",
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: theme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(.1),
                                 borderRadius: BorderRadius.circular(30),
@@ -218,23 +425,36 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.star_rounded, size: 18, color: Colors.amber),
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    size: 18,
+                                    color: Colors.amber,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     service.totalReviews > 0
                                         ? "${service.formattedRating} (${service.totalReviews})"
                                         : "New",
-                                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             if (service.hasLocation)
-                              _InfoChip(icon: Icons.location_on_rounded, label: service.locationName!),
+                              _InfoChip(
+                                icon: Icons.location_on_rounded,
+                                label: service.locationName!,
+                              ),
                             if (service.hasCapacity)
-                              _InfoChip(icon: Icons.groups_rounded, label: service.capacityLabel),
+                              _InfoChip(
+                                icon: Icons.groups_rounded,
+                                label: service.capacityLabel,
+                              ),
                           ],
                         ),
+
                         if (service.hasPrice) ...[
                           const SizedBox(height: 18),
                           Container(
@@ -242,7 +462,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [theme.primaryColor, AppColors.secondary],
+                                colors: [
+                                  theme.primaryColor,
+                                  AppColors.secondary,
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -250,30 +473,49 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.sell_rounded, color: Colors.white),
+                                const Icon(
+                                  Icons.sell_rounded,
+                                  color: Colors.white,
+                                ),
                                 const SizedBox(width: 10),
                                 Text(
                                   "\$${service.price!.toStringAsFixed(2)}",
-                                  style: theme.textTheme.titleMedium
-                                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(width: 6),
-                                const Text("starting price", style: TextStyle(color: Colors.white70)),
+                                const Text(
+                                  "starting price",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
                               ],
                             ),
                           ),
                         ],
+
                         if (service.eventTypes.isNotEmpty) ...[
                           const SizedBox(height: 26),
-                          Text("Suitable For",
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            "Suitable For",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           EventTypesSection(eventTypes: service.eventTypes),
                         ],
+
                         const SizedBox(height: 28),
+
                         if (service.description.trim().isNotEmpty) ...[
-                          Text("Description",
-                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            "Description",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 14),
                           Container(
                             width: double.infinity,
@@ -283,27 +525,42 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(.04), blurRadius: 16, offset: const Offset(0, 6)),
+                                  color: Colors.black.withOpacity(.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
                               ],
                             ),
-                            child: Text(service.description, style: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
+                            child: Text(
+                              service.description,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.6,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 28),
                         ],
 
-                        /// Availability
                         if (service.availability.isNotEmpty) ...[
-                          Text("Availability",
-                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            "Availability",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 16),
-                          AvailabilitySection(availability: service.availability),
+                          AvailabilitySection(
+                            availability: service.availability,
+                          ),
                           const SizedBox(height: 24),
                         ],
 
-                        /// ⚠️ بانرات مطابقة الوقت والسعة — فقط أثناء إنشاء مناسبة
-                        if (hasEventContext) ...[
+                        if (_hasEventContext) ...[
                           if (timeMatch != null && !timeMatch.fits)
-                            _WarningBanner(icon: Icons.event_busy_rounded, message: timeMatch.reason)
+                            _WarningBanner(
+                              icon: Icons.event_busy_rounded,
+                              message: timeMatch.reason,
+                            )
                           else if (timeMatch == null && !dayOnlyAvailable)
                             _WarningBanner(
                               icon: Icons.event_busy_rounded,
@@ -324,105 +581,184 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           const SizedBox(height: 24),
                         ],
 
-                        /// Package Services (Hall + Partners)
                         if (service.hasPackageServices) ...[
-                          Text("Included Services",
-                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            "Included Services",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             "This package works exclusively with these partners",
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55)),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                .55,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          PackageServicesSection(services: service.packageServices!),
+                          PackageServicesSection(
+                            services: service.packageServices!,
+                          ),
                           const SizedBox(height: 30),
                         ],
 
                         /// خدمة بدون Sub-Services (Hall, Sound) — اختيار مباشر
-                        if (widget.selectable && service.subServices.isEmpty && !service.hasPackageServices) ...[
-                          Text("Book This Service",
-                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        if (_selectableUi &&
+                            service.subServices.isEmpty &&
+                            !service.hasPackageServices) ...[
+                          Text(
+                            "Book This Service",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             "This service doesn't require choosing sub-items — add it directly",
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55)),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                .55,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          BlocBuilder<EventBuilderCubit, Map<String, SelectedService>>(
-                            builder: (context, selections) {
-                              final isSelected = selections[service.id]?.wholeServicePrice != null;
-
-                              return _WholeServiceCard(
-                                isSelected: isSelected,
-                                price: service.price,
-                                enabled: canBook,
-                                onTap: () => context.read<EventBuilderCubit>().toggleWholeService(
-                                      serviceId: service.id,
-                                      serviceName: service.provider.businessName,
-                                      price: service.price ?? 0,
-                                      timeSlotId: timeMatch?.timeSlotId,
-                                    ),
-                              );
-                            },
-                          ),
+                          if (_isCreationFlow)
+                            BlocBuilder<
+                              EventBuilderCubit,
+                              Map<String, SelectedService>
+                            >(
+                              builder: (context, selections) {
+                                final isSelected =
+                                    selections[service.id]?.wholeServicePrice !=
+                                    null;
+                                return _WholeServiceCard(
+                                  isSelected: isSelected,
+                                  price: service.price,
+                                  enabled: canBook,
+                                  onTap: () => context
+                                      .read<EventBuilderCubit>()
+                                      .toggleWholeService(
+                                        serviceId: service.id,
+                                        serviceName:
+                                            service.provider.businessName,
+                                        price: service.price ?? 0,
+                                        timeSlotId: timeMatch?.timeSlotId,
+                                      ),
+                                );
+                              },
+                            )
+                          else
+                            _WholeServiceCard(
+                              isSelected: _localWholeServiceSelected,
+                              price: service.price,
+                              enabled: canBook,
+                              onTap: () => setState(
+                                () => _localWholeServiceSelected =
+                                    !_localWholeServiceSelected,
+                              ),
+                            ),
                           const SizedBox(height: 34),
                         ],
 
                         /// Sub Services — عرض أو اختيار
                         if (service.subServices.isNotEmpty) ...[
                           Text(
-                            widget.selectable ? "Select Services" : "Available Services",
-                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            _selectableUi
+                                ? "Select Services"
+                                : "Available Services",
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            widget.selectable
+                            _selectableUi
                                 ? "Choose what you need and set the quantity"
                                 : "You'll be able to select these when booking",
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55)),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                .55,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          if (widget.selectable)
-                            BlocBuilder<EventBuilderCubit, Map<String, SelectedService>>(
+                          if (_isCreationFlow)
+                            BlocBuilder<
+                              EventBuilderCubit,
+                              Map<String, SelectedService>
+                            >(
                               builder: (context, selections) {
-                                final serviceSelections = selections[service.id]?.subServices ?? {};
-
+                                final serviceSelections =
+                                    selections[service.id]?.subServices ?? {};
                                 return Column(
                                   children: service.subServices.map((s) {
                                     final selectedSub = serviceSelections[s.id];
-
                                     return SubServiceCard(
                                       subService: s,
                                       selectable: true,
                                       enabled: canBook,
                                       isSelected: selectedSub != null,
                                       quantity: selectedSub?.quantity ?? 1,
-                                      onToggle: () => context.read<EventBuilderCubit>().toggleSubService(
+                                      onToggle: () => context
+                                          .read<EventBuilderCubit>()
+                                          .toggleSubService(
                                             serviceId: service.id,
-                                            serviceName: service.provider.businessName,
+                                            serviceName:
+                                                service.provider.businessName,
                                             subServiceId: s.id,
                                             subServiceName: s.name,
                                             pricePerUnit: s.pricePerUnit,
                                             unitType: s.unitType,
                                             timeSlotId: timeMatch?.timeSlotId,
                                           ),
-                                      onQuantityChanged: (q) =>
-                                          context.read<EventBuilderCubit>().setQuantity(service.id, s.id, q),
+                                      onQuantityChanged: (q) => context
+                                          .read<EventBuilderCubit>()
+                                          .setQuantity(service.id, s.id, q),
                                     );
                                   }).toList(),
                                 );
                               },
                             )
+                          else if (_isAddToEventFlow)
+                            Column(
+                              children: service.subServices.map((s) {
+                                final isSelected = _localSubServices
+                                    .containsKey(s.id);
+                                final qty = _localSubServices[s.id] ?? 1;
+                                return SubServiceCard(
+                                  subService: s,
+                                  selectable: true,
+                                  enabled: canBook,
+                                  isSelected: isSelected,
+                                  quantity: qty,
+                                  onToggle: () => setState(() {
+                                    if (isSelected) {
+                                      _localSubServices.remove(s.id);
+                                    } else {
+                                      _localSubServices[s.id] = 1;
+                                    }
+                                  }),
+                                  onQuantityChanged: (q) => setState(
+                                    () => _localSubServices[s.id] = q,
+                                  ),
+                                );
+                              }).toList(),
+                            )
                           else
-                            ...service.subServices.map((s) => SubServiceCard(subService: s)),
+                            ...service.subServices.map(
+                              (s) => SubServiceCard(subService: s),
+                            ),
                           const SizedBox(height: 34),
                         ],
 
-                        /// Provider
-                        Text("Provider", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          "Provider",
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(18),
@@ -430,7 +766,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                             color: theme.cardColor,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 14, offset: const Offset(0, 5)),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(.04),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
+                              ),
                             ],
                           ),
                           child: Row(
@@ -438,17 +778,29 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundColor: AppColors.primary.withOpacity(.12),
-                                child: (service.provider.user.profileImage ?? service.serviceLogo) == null
-                                    ? const Icon(Icons.business, color: AppColors.primary)
+                                backgroundColor: AppColors.primary.withOpacity(
+                                  .12,
+                                ),
+                                child:
+                                    (service.provider.user.profileImage ??
+                                            service.serviceLogo) ==
+                                        null
+                                    ? const Icon(
+                                        Icons.business,
+                                        color: AppColors.primary,
+                                      )
                                     : ClipOval(
                                         child: Image.network(
-                                          service.provider.user.profileImage ?? service.serviceLogo!,
+                                          service.provider.user.profileImage ??
+                                              service.serviceLogo!,
                                           width: 56,
                                           height: 56,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) =>
-                                              const Icon(Icons.business, color: AppColors.primary),
+                                              const Icon(
+                                                Icons.business,
+                                                color: AppColors.primary,
+                                              ),
                                         ),
                                       ),
                               ),
@@ -457,18 +809,30 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(service.provider.businessName,
-                                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      service.provider.businessName,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
                                     const SizedBox(height: 4),
-                                    Text(service.provider.user.fullName, style: theme.textTheme.bodyMedium),
-                                    if (service.provider.description.trim().isNotEmpty) ...[
+                                    Text(
+                                      service.provider.user.fullName,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    if (service.provider.description
+                                        .trim()
+                                        .isNotEmpty) ...[
                                       const SizedBox(height: 10),
                                       Text(
                                         service.provider.description,
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          height: 1.5,
-                                          color: theme.colorScheme.onSurface.withOpacity(.70),
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              height: 1.5,
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(.70),
+                                            ),
                                       ),
                                     ],
                                   ],
@@ -487,108 +851,139 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
           );
         },
       ),
-      bottomNavigationBar: BlocBuilder<ServiceDetailsCubit, ServiceDetailsState>(
-        builder: (context, state) {
-          if (state is! ServiceDetailsLoaded) return const SizedBox();
+      bottomNavigationBar:
+          BlocBuilder<ServiceDetailsCubit, ServiceDetailsState>(
+            builder: (context, state) {
+              if (state is! ServiceDetailsLoaded) return const SizedBox();
+              final service = state.service;
 
-          if (!widget.selectable) {
-            return SafeArea(
-              minimum: const EdgeInsets.all(18),
-              child: SizedBox(
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () => BookingChoiceSheet.show(context),
-                  child: const Text("Book Now"),
-                ),
-              ),
-            );
-          }
+              if (_isAddToEventFlow) {
+                final timeMatch = _timeMatchFor(service);
 
-          return BlocBuilder<EventBuilderCubit, Map<String, SelectedService>>(
-            builder: (context, selections) {
-              final current = selections[state.service.id];
-              final count = current?.subServices.length ?? (current?.wholeServicePrice != null ? 1 : 0);
+                return BlocConsumer<
+                  AddServiceToEventCubit,
+                  AddServiceToEventState
+                >(
+                  listener: (context, addState) {
+                    if (addState is AddServiceToEventSuccess)
+                      _onAddToEventSuccess(context);
+                    if (addState is AddServiceToEventError) {
+                      showAppSnackBar(
+                        context,
+                        message: addState.message,
+                        type: SnackBarType.error,
+                      );
+                    }
+                  },
+                  builder: (context, addState) {
+                    final isSubmitting = addState is AddServiceToEventLoading;
+                    final hasSelection =
+                        _localWholeServiceSelected ||
+                        _localSubServices.isNotEmpty;
 
-              return SafeArea(
-                minimum: const EdgeInsets.all(18),
-                child: SizedBox(
-                  height: 54,
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(count > 0 ? "Done ($count selected)" : "Done"),
+                    return SafeArea(
+                      minimum: const EdgeInsets.all(18),
+                      child: SizedBox(
+                        height: 54,
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: (isSubmitting || !hasSelection)
+                              ? null
+                              : () => _submitAddToEvent(
+                                  context,
+                                  service,
+                                  timeMatch,
+                                ),
+                          child: isSubmitting
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text("Add to Event"),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+
+              if (!widget.selectable) {
+                return SafeArea(
+                  minimum: const EdgeInsets.all(18),
+                  child: SizedBox(
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: () async {
+  final choice = await BookingChoiceSheet.show(context);
+
+  if (!context.mounted || choice == null) return;
+
+  if (choice == BookingChoice.create) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreateEventPage(),
+      ),
+    );
+    return;
+  }
+
+  final selectedEvent = await Navigator.push<EventItem>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const SelectEventForBookingPage(),
+    ),
+  );
+
+  if (!context.mounted || selectedEvent == null) return;
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => EventBookingsDetailsPage(
+        eventId: selectedEvent.id,
+        addServiceId: service.id,
+      ),
+    ),
+  );
+},
+                      child: const Text("Book Now"),
+                    ),
                   ),
-                ),
+                );
+              }
+
+              return BlocBuilder<
+                EventBuilderCubit,
+                Map<String, SelectedService>
+              >(
+                builder: (context, selections) {
+                  final current = selections[service.id];
+                  final count =
+                      current?.subServices.length ??
+                      (current?.wholeServicePrice != null ? 1 : 0);
+
+                  return SafeArea(
+                    minimum: const EdgeInsets.all(18),
+                    child: SizedBox(
+                      height: 54,
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          count > 0 ? "Done ($count selected)" : "Done",
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _WarningBanner extends StatelessWidget {
-  final IconData icon;
-  final String message;
-
-  const _WarningBanner({required this.icon, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withOpacity(.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
-            ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuccessBanner extends StatelessWidget {
-  final String message;
-
-  const _SuccessBanner({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.success.withOpacity(.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle_rounded, color: AppColors.success),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              "✓ $message",
-              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -609,7 +1004,6 @@ class _WholeServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Material(
@@ -620,32 +1014,44 @@ class _WholeServiceCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? theme.primaryColor.withOpacity(.08) : theme.cardColor,
+              color: isSelected
+                  ? theme.primaryColor.withOpacity(.08)
+                  : theme.cardColor,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isSelected ? theme.primaryColor : theme.dividerColor.withOpacity(.2),
+                color: isSelected
+                    ? theme.primaryColor
+                    : theme.dividerColor.withOpacity(.2),
                 width: isSelected ? 1.6 : 1,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                  color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface.withOpacity(.35),
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: isSelected
+                      ? theme.primaryColor
+                      : theme.colorScheme.onSurface.withOpacity(.35),
                   size: 24,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     "Book this service for your event",
-                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 if (price != null)
                   Text(
                     "\$${price!.toStringAsFixed(0)}",
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(color: AppColors.gold, fontWeight: FontWeight.w800),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
               ],
             ),
@@ -656,16 +1062,83 @@ class _WholeServiceCard extends StatelessWidget {
   }
 }
 
+class _WarningBanner extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  const _WarningBanner({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withOpacity(.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuccessBanner extends StatelessWidget {
+  final String message;
+  const _SuccessBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: AppColors.success),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "✓ $message",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.success,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-
   const _InfoChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(

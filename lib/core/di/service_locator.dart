@@ -23,11 +23,13 @@ import 'package:eventy_customer/features/complaints/presentation/blocs/create_co
 import 'package:eventy_customer/features/events/data/datasource/event_remote_datasource.dart';
 import 'package:eventy_customer/features/events/data/repository/event_repository_impl.dart';
 import 'package:eventy_customer/features/events/domain/repository/event_repository.dart';
+import 'package:eventy_customer/features/events/domain/usecases/add_service_to_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/cancel_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/create_event_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/get_all_events_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/get_event_bookings_usecase.dart';
 import 'package:eventy_customer/features/events/domain/usecases/submit_quote_decisions_usecase.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/add_service_to_event/add_service_to_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/create_event/create_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_cubit.dart';
@@ -255,10 +257,13 @@ sl.registerLazySingleton(
 );
 
 sl.registerFactory(
-  () => CancelEventCubit(
+  () => CancelEventCubit(  
     sl(),
   ),
 );
+
+sl.registerLazySingleton(() => AddServiceToEventUseCase(sl()));
+sl.registerFactory<AddServiceToEventCubit>(() => AddServiceToEventCubit(sl()));
 
 // Favorites
 

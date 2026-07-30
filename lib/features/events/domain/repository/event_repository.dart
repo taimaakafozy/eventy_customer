@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/events/data/models/add_service_booking_model.dart';
 import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
@@ -26,4 +27,6 @@ abstract class EventRepository {
   String eventId,
   CancelEventRequestModel request,
 );
+
+Future<AddedBookingModel> addServiceToEvent(String eventId, AddServiceBookingRequestModel request);
 }

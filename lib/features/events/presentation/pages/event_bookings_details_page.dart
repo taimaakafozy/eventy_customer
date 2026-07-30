@@ -6,6 +6,7 @@ import 'package:eventy_customer/core/widgets/app_confirmation_dialog.dart';
 import 'package:eventy_customer/core/widgets/snackbar_helper.dart';
 import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
+import 'package:eventy_customer/features/events/presentation/blocs/add_service_to_event/add_service_to_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/cancel_event/cancel_event_state.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_bookings_details/event_bookings_details_cubit.dart';
@@ -15,31 +16,36 @@ import 'package:eventy_customer/features/events/presentation/blocs/quote_decisio
 import 'package:eventy_customer/features/events/presentation/blocs/quote_decision/quote_decision_state.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/booking_payment_qr.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/payment_method_sheet.dart';
+import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
+import 'package:eventy_customer/features/services/presentation/pages/service_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EventBookingsDetailsPage extends StatelessWidget {
   final String eventId;
+  final String? addServiceId;
 
-  const EventBookingsDetailsPage({super.key, required this.eventId});
+  const EventBookingsDetailsPage({super.key, required this.eventId,this.addServiceId});
 
   @override
   Widget build(BuildContext context) {
+     debugPrint("EVENT DETAILS PAGE");
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) => sl<EventBookingsDetailsCubit>(param1: eventId)..load(),
-        ),
+        BlocProvider(create: (_) => sl<EventBookingsDetailsCubit>(param1: eventId)..load()),
         BlocProvider(create: (_) => sl<QuoteDecisionCubit>(param1: eventId)),
-        BlocProvider(create: (_) => sl<CancelEventCubit>()),
+        BlocProvider(
+  create: (_) => sl<CancelEventCubit>(),
+),
       ],
-      child: const _EventBookingsView(),
+      child: _EventBookingsView(addServiceId: addServiceId),
     );
   }
 }
 
 class _EventBookingsView extends StatefulWidget {
-  const _EventBookingsView();
+  final String? addServiceId;
+  const _EventBookingsView({this.addServiceId});
 
   @override
   State<_EventBookingsView> createState() => _EventBookingsViewState();
@@ -74,6 +80,37 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
       }
     });
   }
+
+  Future<void> _openAddService(BuildContext context, EventBookingsDetailsModel details) async {
+  final added = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
+          BlocProvider(create: (_) => sl<AddServiceToEventCubit>()),
+          BlocProvider(
+  create: (_) => sl<CancelEventCubit>(),
+),
+        ],
+        child: ServiceDetailsPage(
+          serviceId: widget.addServiceId!,
+          selectable: true,
+          addToEventId: details.id,
+          addToEventName: details.name,
+          eventDate: details.eventDate,
+          eventStartTime: details.eventStartTime,
+          eventEndTime: details.eventEndTime,
+          eventGuests: details.numberOfGuests,
+        ),
+      ),
+    ),
+  );
+
+  if (added == true && context.mounted) {
+    context.read<EventBookingsDetailsCubit>().load();
+  }
+}
 
   Future<void> _showCancelDialog(String eventId) async {
     final reasonController = TextEditingController();
@@ -217,6 +254,18 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      floatingActionButton: widget.addServiceId == null
+    ? null
+    : BlocBuilder<EventBookingsDetailsCubit, EventBookingsDetailsState>(
+        builder: (context, state) {
+          if (state is! EventBookingsDetailsLoaded) return const SizedBox();
+          return FloatingActionButton.extended(
+            onPressed: () => _openAddService(context, state.details),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text("Add Service"),
+          );
+        },
+      ),
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: const Text("Event Bookings")),
 

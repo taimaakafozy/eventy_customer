@@ -65,19 +65,11 @@ class ServicePlaceholder extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-
                 Text(
                   ServiceTypeHelper.displayName(type),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                Text(
-                  "No image available",
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withOpacity(.85),
                   ),
                 ),
                 const SizedBox(height: 40),

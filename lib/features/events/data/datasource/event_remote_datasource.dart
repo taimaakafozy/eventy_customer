@@ -1,3 +1,4 @@
+import 'package:eventy_customer/features/events/data/models/add_service_booking_model.dart';
 import 'package:eventy_customer/features/events/data/models/cancel_event_request_model.dart';
 import 'package:eventy_customer/features/events/data/models/create_event_model.dart';
 import 'package:eventy_customer/features/events/data/models/event_bookings_details_model.dart';
@@ -30,6 +31,7 @@ abstract class EventRemoteDataSource {
   String eventId,
   CancelEventRequestModel request,
 );
+Future<AddedBookingModel> addServiceToEvent(String eventId, AddServiceBookingRequestModel request);
 }
 
 class EventRemoteDataSourceImpl implements EventRemoteDataSource {
@@ -134,4 +136,16 @@ Future<void> cancelEvent(
     );
   }
 }
+
+@override
+  Future<AddedBookingModel> addServiceToEvent(String eventId, AddServiceBookingRequestModel request) async {
+    final response = await client.dio.post('events/$eventId/bookings', data: request.toJson());
+    final data = response.data;
+
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to add service to event');
+    }
+
+    return AddedBookingModel.fromJson(data['data']);
+  }
 }
