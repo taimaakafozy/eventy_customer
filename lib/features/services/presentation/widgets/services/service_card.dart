@@ -1,6 +1,7 @@
 import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/theme/app_colors.dart';
 import 'package:eventy_customer/core/widgets/app_list_tile_card.dart';
+import 'package:eventy_customer/core/widgets/price_tag.dart';
 import 'package:eventy_customer/core/widgets/primary_button.dart';
 import 'package:eventy_customer/core/widgets/snackbar_helper.dart';
 import 'package:eventy_customer/features/favorites/presentation/blocs/favorite_status/favorite_status_cubit.dart';
@@ -103,7 +104,6 @@ class _ServiceCardState extends State<ServiceCard> {
                     //       ),
                     //     ),
                     //   ),
-
                     Positioned(
                       right: 8,
                       top: 8,
@@ -141,6 +141,15 @@ class _ServiceCardState extends State<ServiceCard> {
                         ),
                       ),
                     ),
+
+                    if (widget.service.hasDiscount)
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: DiscountBadge(
+                          percentOff: widget.service.discount?.percentOff ?? 0,
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 18),
@@ -182,13 +191,11 @@ class _ServiceCardState extends State<ServiceCard> {
                       style: theme.textTheme.bodySmall,
                     ),
                     const Spacer(),
-                    if (widget.service.price != null)
-                      Text(
-                        "\$${widget.service.price}",
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    if (widget.service.finalPrice != null)
+                      PriceTag(
+                        originalPrice: widget.service.originalPrice,
+                        finalPrice: widget.service.finalPrice,
+                        percentOff: widget.service.discount?.percentOff,
                       ),
                   ],
                 ),

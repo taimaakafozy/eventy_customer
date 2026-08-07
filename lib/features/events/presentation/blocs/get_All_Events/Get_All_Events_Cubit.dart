@@ -53,6 +53,10 @@ class GetAllEventsCubit extends Cubit<GetAllEventsState> {
 
     _isLoading = true;
 
+    // جديد
+     emit(currentState.copyWith(isLoadingMore: true));  
+
+
     try {
       final response =
           await getAllEventsUseCase(page: _page + 1, limit: _limit, status: _status);
@@ -61,7 +65,10 @@ class GetAllEventsCubit extends Cubit<GetAllEventsState> {
       _events.addAll(response.data.items);
       _hasReachedEnd = response.data.meta.page >= response.data.meta.totalPages;
 
-      emit(currentState.copyWith(events: List.from(_events), hasReachedEnd: _hasReachedEnd));
+//تعديل
+emit(GetAllEventsLoaded(events: List.from(_events), hasReachedEnd: _hasReachedEnd, isLoadingMore: false));
+
+
     } catch (_) {}
 
     _isLoading = false;

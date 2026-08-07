@@ -15,19 +15,23 @@ class GetAllEventsError extends GetAllEventsState {
 class GetAllEventsLoaded extends GetAllEventsState {
   final List<EventItem> events;
   final bool hasReachedEnd;
+  final bool isLoadingMore; // ⚠️ جديد
 
   GetAllEventsLoaded({
     required this.events,
     required this.hasReachedEnd,
+    this.isLoadingMore = false
   });
 
   GetAllEventsLoaded copyWith({
     List<EventItem>? events,
     bool? hasReachedEnd,
+    bool? isLoadingMore
   }) {
     return GetAllEventsLoaded(
       events: events ?? this.events,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
+       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }

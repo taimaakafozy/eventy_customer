@@ -1,4 +1,5 @@
 import 'package:eventy_customer/features/services/data/models/available_services_model/service_file_model.dart';
+import 'package:eventy_customer/features/services/data/models/discount_model.dart';
 
 import 'availability_model.dart';
 import 'event_type_model.dart';
@@ -33,6 +34,11 @@ class ServiceModel {
 
   final double? price;
 
+  final double? originalPrice;
+  final double? finalPrice;
+  final double discountAmount;
+  final DiscountModel? discount;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -66,6 +72,10 @@ class ServiceModel {
     required this.minCapacity,
     required this.maxCapacity,
     required this.price,
+    this.originalPrice,
+    this.finalPrice,
+    this.discountAmount = 0,
+    this.discount,
     required this.createdAt,
     required this.updatedAt,
     required this.serviceType,
@@ -102,17 +112,19 @@ class ServiceModel {
       maxCapacity: json['maxCapacity'],
 
       price: json['price']?.toDouble(),
+      originalPrice: json['originalPrice']?.toDouble(),
+      finalPrice: json['finalPrice']?.toDouble(),
+      discountAmount: (json['discountAmount'] ?? 0).toDouble(),
+      discount: json['discount'] != null
+          ? DiscountModel.fromJson(json['discount'])
+          : null,
 
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
 
-      serviceType: ServiceTypeModel.fromJson(
-        json['serviceType'] ?? {},
-      ),
+      serviceType: ServiceTypeModel.fromJson(json['serviceType'] ?? {}),
 
-      provider: ProviderModel.fromJson(
-        json['provider'] ?? {},
-      ),
+      provider: ProviderModel.fromJson(json['provider'] ?? {}),
 
       eventTypes: (json['eventTypes'] as List<dynamic>? ?? [])
           .map((e) => EventTypeModel.fromJson(e))
@@ -131,4 +143,6 @@ class ServiceModel {
           .toList(),
     );
   }
+
+  bool get hasDiscount => discount != null;
 }

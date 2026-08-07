@@ -1,4 +1,5 @@
 import 'package:eventy_customer/core/theme/app_colors.dart';
+import 'package:eventy_customer/core/widgets/price_tag.dart';
 import 'package:eventy_customer/core/widgets/primary_quantity_stepper.dart';
 import 'package:eventy_customer/features/services/data/models/service_details_model.dart';
 import 'package:eventy_customer/features/services/presentation/widgets/service_details/sub_service_media_viewer.dart';
@@ -32,7 +33,10 @@ class SubServiceCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SubServiceMediaViewer(media: subService.media, title: subService.name),
+        builder: (_) => SubServiceMediaViewer(
+          media: subService.media,
+          title: subService.name,
+        ),
       ),
     );
   }
@@ -54,7 +58,9 @@ class SubServiceCard extends StatelessWidget {
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? theme.primaryColor : theme.dividerColor.withOpacity(.15),
+            color: isSelected
+                ? theme.primaryColor
+                : theme.dividerColor.withOpacity(.15),
             width: isSelected ? 1.6 : 1,
           ),
         ),
@@ -70,8 +76,12 @@ class SubServiceCard extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onToggle,
                       child: Icon(
-                        isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                        color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface.withOpacity(.3),
+                        isSelected
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: isSelected
+                            ? theme.primaryColor
+                            : theme.colorScheme.onSurface.withOpacity(.3),
                         size: 22,
                       ),
                     ),
@@ -93,40 +103,62 @@ class SubServiceCard extends StatelessWidget {
                               firstItem!.type == ServiceFileType.video
                                   ? Container(
                                       color: Colors.black87,
-                                      child: const Icon(Icons.play_circle_fill_rounded,
-                                          color: Colors.white, size: 22),
+                                      child: const Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        color: Colors.white,
+                                        size: 22,
+                                      ),
                                     )
                                   : Image.network(
                                       firstItem.url,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Icon(Icons.room_service_rounded, color: theme.primaryColor),
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.room_service_rounded,
+                                        color: theme.primaryColor,
+                                      ),
                                     ),
                               if (media.length > 1)
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(.65),
-                                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(8)),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(8),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.collections_rounded, color: Colors.white, size: 9),
+                                        const Icon(
+                                          Icons.collections_rounded,
+                                          color: Colors.white,
+                                          size: 9,
+                                        ),
                                         const SizedBox(width: 2),
-                                        Text("${media.length}",
-                                            style: const TextStyle(
-                                                color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+                                        Text(
+                                          "${media.length}",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ),
                             ],
                           )
-                        : Icon(Icons.room_service_rounded, color: theme.primaryColor),
+                        : Icon(
+                            Icons.room_service_rounded,
+                            color: theme.primaryColor,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -134,29 +166,42 @@ class SubServiceCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(subService.name,
-                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        subService.name,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       if (subService.description.trim().isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
                           subService.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.6)),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(.6),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 6),
                       if (!subService.isAvailable)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.error.withOpacity(.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text("Unavailable",
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 10)),
+                          child: Text(
+                            "Unavailable",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -165,12 +210,20 @@ class SubServiceCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text("\$${subService.pricePerUnit.toStringAsFixed(2)}",
-                        style: theme.textTheme.bodyLarge
-                            ?.copyWith(color: AppColors.gold, fontWeight: FontWeight.w800)),
-                    Text("/ ${subService.unitType.toLowerCase()}",
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.5))),
+                    PriceTag(
+                      originalPrice:
+                          subService.originalPrice ?? subService.pricePerUnit,
+                      finalPrice:
+                          subService.finalPrice ?? subService.pricePerUnit,
+                      percentOff: subService.discount?.percentOff,
+                      fontSize: 15,
+                    ),
+                    Text(
+                      "/ ${subService.unitType.toLowerCase()}",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(.5),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -181,12 +234,19 @@ class SubServiceCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Text("Quantity", style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    "Quantity",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const Spacer(),
                   PrimaryQuantityStepper(
                     value: quantity,
                     min: 1,
-                    max: subService.dailyCapacity > 0 ? subService.dailyCapacity : null,
+                    max: subService.dailyCapacity > 0
+                        ? subService.dailyCapacity
+                        : null,
                     onChanged: onQuantityChanged ?? (_) {},
                   ),
                 ],
@@ -195,9 +255,11 @@ class SubServiceCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  "Total: \$${(subService.pricePerUnit * quantity).toStringAsFixed(2)}",
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(fontWeight: FontWeight.w700, color: theme.primaryColor),
+                  "Total: \$${((subService.finalPrice ?? subService.pricePerUnit) * quantity).toStringAsFixed(2)}",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.primaryColor,
+                  ),
                 ),
               ),
             ],

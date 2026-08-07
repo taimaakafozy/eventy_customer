@@ -6,7 +6,6 @@ import 'package:eventy_customer/features/favorites/presentation/blocs/favorites_
 import 'package:eventy_customer/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:eventy_customer/features/home/presentation/pages/home_page.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
-import 'package:eventy_customer/features/services/presentation/blocs/service_types/service_types_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/pages/services_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,23 +22,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   static final List<Widget> _pages = [
     HomePage(),
-  //  MultiBlocProvider(
-  // providers: [
-
-  //   BlocProvider(
-  //     create: (_) =>
-  //         sl<ServiceTypesCubit>()..getServiceTypes(),
-  //   ),
-
-  //   BlocProvider(
-  //     create: (_) =>
-  //         sl<AvailableServicesCubit>()..loadServices(null),
-  //   ),
-
-  // ],
-  // child: 
   const ServicesPage(),
-// ),
     const FavoritesPage(),
     const MyEventsPage(),
   ];
@@ -72,7 +55,7 @@ void initState() {
 
   sl<FavoriteStatusCubit>().loadFavoriteIds();
 
-  sl<ServiceTypesCubit>().getServiceTypes();
+  // sl<ServiceTypesCubit>().getServiceTypes();
 }
 
   @override

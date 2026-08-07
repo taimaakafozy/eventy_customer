@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:eventy_customer/core/network/dio_error_mapper.dart';
 import 'package:eventy_customer/features/auth/data/models/change_password_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_request_model.dart';
 import 'package:eventy_customer/features/auth/data/models/register_response_model.dart';
@@ -53,6 +54,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String email,
     String password,
   ) async {
+     try {
     final response = await client.dio.post(
       'auth/login',
       data: {
@@ -74,12 +76,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       "refreshToken": data['data']['refreshToken'],
       "message": data['message'],
     };
+     } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Login failed. Please check your credentials.");
+    }
   }
 
   @override
 Future<RegisterResponseModel> register(
   RegisterRequestModel request,
 ) async {
+   try {
   final formData = FormData.fromMap({
     "fullName": request.fullName,
     "email": request.email,
@@ -110,12 +116,16 @@ Future<RegisterResponseModel> register(
   }
 
   return RegisterResponseModel.fromJson(data);
+   } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Registration failed. Please try again.");
+    }
 }
 
 @override
 Future<VerifyOtpResponseModel> verifyOtp(
   VerifyOtpRequestModel request,
 ) async {
+   try {
   print("VERIFY OTP REQUEST: ${request.toJson()}");
   final response = await client.dio.post(
     'auth/verify-otp',
@@ -131,24 +141,27 @@ Future<VerifyOtpResponseModel> verifyOtp(
   }
 
   return VerifyOtpResponseModel.fromJson(data);
+  } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "OTP verification failed. Please try again.");
+    }
 }
 
 @override
 Future<ResendOtpResponseModel> resendOtp(
     ResendOtpRequestModel request,
 ) async {
+   try {
   final response = await client.dio.post(
     '/auth/resend-otp',
     data: request.toJson(),
   );
 
   return ResendOtpResponseModel.fromJson(response.data);
+   } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Failed to resend code. Please try again.");
+    }
 }
 
-// @override
-// Future<RefreshTokenResponseModel> refreshToken() async {
-//   throw UnimplementedError();
-// }
 @override
 Future<void> logout() async {
   final refreshToken =
@@ -157,19 +170,23 @@ Future<void> logout() async {
   if (refreshToken == null) {
     return;
   }
-
+try {
   await client.dio.post(
     'auth/logout',
     data: {
       "refreshToken": refreshToken,
     },
   );
+  } on DioException catch (_) {
+      /// فشل استدعاء logout بالسيرفر لا يجب أن يمنع تسجيل الخروج محليًا
+    }
 }
 
 @override
 Future<RequestResetPasswordResponseModel> requestResetPassword(
   RequestResetPasswordRequestModel request,
 ) async {
+  try {
   final response = await client.dio.post(
     'auth/reset-password/request',
     data: request.toJson(),
@@ -178,12 +195,16 @@ Future<RequestResetPasswordResponseModel> requestResetPassword(
   return RequestResetPasswordResponseModel.fromJson(
     response.data,
   );
+   } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Couldn't send reset code. Please check the email and try again.");
+    }
 }
 
 @override
 Future<ResetPasswordResponseModel> resetPassword(
   ResetPasswordRequestModel request,
 ) async {
+   try {
   final response = await client.dio.post(
     '/auth/reset-password/confirm',
     data: request.toJson(),
@@ -198,10 +219,14 @@ Future<ResetPasswordResponseModel> resetPassword(
   }
 
   return ResetPasswordResponseModel.fromJson(data);
+  } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Password reset failed. Please try again.");
+    }
 }
 
 @override
 Future<void> changePassword(ChangePasswordRequestModel request) async {
+   try {
   final response = await client.dio.post(
     'auth/change-password',
     data: request.toJson(),
@@ -212,6 +237,9 @@ Future<void> changePassword(ChangePasswordRequestModel request) async {
   if (data['success'] != true) {
     throw Exception(data['message'] ?? 'Failed to change password');
   }
+   } on DioException catch (e) {
+      throw DioErrorMapper.map(e, fallback: "Failed to change password.");
+    }
 }
 
 }

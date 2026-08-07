@@ -1,5 +1,6 @@
 import 'package:eventy_customer/core/di/service_locator.dart';
 import 'package:eventy_customer/core/theme/app_colors.dart';
+import 'package:eventy_customer/core/widgets/price_tag.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_cubit.dart';
 import 'package:eventy_customer/features/events/presentation/blocs/event_builder/event_builder_state.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/available_services/available_services_cubit.dart';
@@ -14,9 +15,13 @@ class EventServicesSummary extends StatelessWidget {
   final String? eventEndTime;
   final int? eventGuests;
 
-  const EventServicesSummary({super.key, this.eventDate, this.eventStartTime,
+  const EventServicesSummary({
+    super.key,
+    this.eventDate,
+    this.eventStartTime,
     this.eventEndTime,
-    this.eventGuests,});
+    this.eventGuests,
+  });
 
   void _browseServices(BuildContext context) {
     final eventBuilderCubit = context.read<EventBuilderCubit>();
@@ -100,76 +105,111 @@ class EventServicesSummary extends StatelessWidget {
               );
             }
 
-            final total = context.read<EventBuilderCubit>().totalPrice;
+            double totalFinal = 0;
+            double totalOriginal = 0;
+
+            final rows = selections.values.map((service) {
+              final isWhole = service.wholeServicePrice != null;
+
+              final serviceFinal = isWhole
+                  ? service.wholeServicePrice!
+                  : service.subServices.values.fold(0.0, (sum, s) => sum + s.pricePerUnit * s.quantity);
+
+              final serviceOriginal = isWhole
+                  ? (service.wholeServiceOriginalPrice ?? service.wholeServicePrice!)
+                  : service.subServices.values
+                      .fold(0.0, (sum, s) => sum + (s.originalPricePerUnit ?? s.pricePerUnit) * s.quantity);
+
+              totalFinal += serviceFinal;
+              totalOriginal += serviceOriginal;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.dividerColor.withOpacity(.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(service.serviceName,
+                              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                        ),
+                        PriceTag(
+                          originalPrice: serviceOriginal > serviceFinal ? serviceOriginal : null,
+                          finalPrice: serviceFinal,
+                          fontSize: 14,
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close_rounded,
+                              size: 18, color: theme.colorScheme.onSurface.withOpacity(.5)),
+                          onPressed: () => context.read<EventBuilderCubit>().removeService(service.serviceId),
+                        ),
+                      ],
+                    ),
+                    if (isWhole)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text("Full service booking",
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55))),
+                      )
+                    else ...[
+                      Divider(height: 16, color: theme.dividerColor.withOpacity(.3)),
+                      ...service.subServices.values.map((sub) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text("${sub.name} × ${sub.quantity}", style: theme.textTheme.bodySmall),
+                              ),
+                              PriceTag(
+                                originalPrice: sub.hasDiscount ? sub.originalPricePerUnit! * sub.quantity : null,
+                                finalPrice: sub.pricePerUnit * sub.quantity,
+                                fontSize: 12,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              );
+            }).toList();
+
+            final totalSaved = totalOriginal - totalFinal;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ...selections.values.map((service) {
-                  final isWhole = service.wholeServicePrice != null;
-                  final serviceTotal = isWhole
-                      ? service.wholeServicePrice!
-                      : service.subServices.values
-                          .fold(0.0, (sum, s) => sum + s.pricePerUnit * s.quantity);
-
-                  return Container(
+                ...rows,
+                if (totalSaved > 0)
+                  Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.dividerColor.withOpacity(.2)),
+                      color: AppColors.success.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(service.serviceName,
-                                  style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
-                            ),
-                            Text("\$${serviceTotal.toStringAsFixed(0)}",
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.gold, fontWeight: FontWeight.w800)),
-                            IconButton(
-                              icon: Icon(Icons.close_rounded,
-                                  size: 18, color: theme.colorScheme.onSurface.withOpacity(.5)),
-                              onPressed: () =>
-                                  context.read<EventBuilderCubit>().removeService(service.serviceId),
-                            ),
-                          ],
+                        const Icon(Icons.local_offer_rounded, color: AppColors.success, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          "You're saving \$${totalSaved.toStringAsFixed(0)} with active discounts",
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),
                         ),
-                        if (isWhole)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text("Full service booking",
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(.55))),
-                          )
-                        else ...[
-                          Divider(height: 16, color: theme.dividerColor.withOpacity(.3)),
-                          ...service.subServices.values.map((sub) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 3),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text("${sub.name} × ${sub.quantity}",
-                                        style: theme.textTheme.bodySmall),
-                                  ),
-                                  Text("\$${(sub.pricePerUnit * sub.quantity).toStringAsFixed(0)}",
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
                       ],
                     ),
-                  );
-                }),
+                  ),
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -178,9 +218,12 @@ class EventServicesSummary extends StatelessWidget {
                     children: [
                       Text("Estimated Total",
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      Text("\$${total.toStringAsFixed(0)}",
-                          style: theme.textTheme.titleLarge
-                              ?.copyWith(color: theme.primaryColor, fontWeight: FontWeight.bold)),
+                      PriceTag(
+                        originalPrice: totalSaved > 0 ? totalOriginal : null,
+                        finalPrice: totalFinal,
+                        fontSize: 20,
+                        color: theme.primaryColor,
+                      ),
                     ],
                   ),
                 ),

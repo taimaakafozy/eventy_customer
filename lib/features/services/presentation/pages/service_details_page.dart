@@ -1,6 +1,7 @@
 import 'package:eventy_customer/core/theme/app_colors.dart';
 import 'package:eventy_customer/core/utils/date_format_helper.dart';
 import 'package:eventy_customer/core/utils/service_type_helper.dart';
+import 'package:eventy_customer/core/widgets/price_tag.dart';
 import 'package:eventy_customer/core/widgets/snackbar_helper.dart';
 import 'package:eventy_customer/features/events/data/models/add_service_booking_model.dart';
 import 'package:eventy_customer/features/events/data/models/get_all_events_model.dart';
@@ -298,27 +299,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                               ),
                                         ),
                                       ),
-                                      if (service.isActive)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.success
-                                                .withOpacity(.12),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            "Active",
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: AppColors.success,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
+                                      if (service.hasDiscount)
+                                        DiscountBadge(
+                                          percentOff:
+                                              service.discount?.percentOff ?? 0,
                                         ),
                                     ],
                                   ),
@@ -455,7 +439,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           ],
                         ),
 
-                        if (service.hasPrice) ...[
+                        if (service.finalPrice != null || service.hasPrice) ...[
                           const SizedBox(height: 18),
                           Container(
                             width: double.infinity,
@@ -478,13 +462,52 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                   color: Colors.white,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(
-                                  "\$${service.price!.toStringAsFixed(2)}",
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                if (service.hasDiscount) ...[
+                                  Text(
+                                    "\$${service.originalPrice!.toStringAsFixed(0)}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      decoration: TextDecoration.lineThrough,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "\$${service.finalPrice!.toStringAsFixed(2)}",
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(.25),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "-${service.discount?.percentOff.toStringAsFixed(0)}%",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ] else
+                                  Text(
+                                    "\$${service.price!.toStringAsFixed(2)}",
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
                                 const SizedBox(width: 6),
                                 const Text(
                                   "starting price",
@@ -635,7 +658,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                     null;
                                 return _WholeServiceCard(
                                   isSelected: isSelected,
-                                  price: service.price,
+                                  originalPrice:
+                                      service.originalPrice ?? service.price,
+                                  finalPrice:
+                                      service.finalPrice ?? service.price,
+                                  percentOff: service.discount?.percentOff,
                                   enabled: canBook,
                                   onTap: () => context
                                       .read<EventBuilderCubit>()
@@ -643,7 +670,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                         serviceId: service.id,
                                         serviceName:
                                             service.provider.businessName,
-                                        price: service.price ?? 0,
+                                        price:
+                                            service.finalPrice ??
+                                            service.price ??
+                                            0,
+                                        originalPrice: service.hasDiscount
+                                            ? (service.originalPrice ??
+                                                  service.price)
+                                            : null,
+                                        percentOff:
+                                            service.discount?.percentOff,
                                         timeSlotId: timeMatch?.timeSlotId,
                                       ),
                                 );
@@ -652,7 +688,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           else
                             _WholeServiceCard(
                               isSelected: _localWholeServiceSelected,
-                              price: service.price,
+                              originalPrice:
+                                  service.originalPrice ?? service.price,
+                              finalPrice: service.finalPrice ?? service.price,
+                              percentOff: service.discount?.percentOff,
                               enabled: canBook,
                               onTap: () => setState(
                                 () => _localWholeServiceSelected =
@@ -709,7 +748,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                                 service.provider.businessName,
                                             subServiceId: s.id,
                                             subServiceName: s.name,
-                                            pricePerUnit: s.pricePerUnit,
+                                            pricePerUnit:
+                                                s.finalPrice ?? s.pricePerUnit,
+                                            originalPricePerUnit: s.hasDiscount
+                                                ? (s.originalPrice ??
+                                                      s.pricePerUnit)
+                                                : null,
+                                            percentOff: s.discount?.percentOff,
                                             unitType: s.unitType,
                                             timeSlotId: timeMatch?.timeSlotId,
                                           ),
@@ -918,39 +963,39 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                     height: 54,
                     child: ElevatedButton(
                       onPressed: () async {
-  final choice = await BookingChoiceSheet.show(context);
+                        final choice = await BookingChoiceSheet.show(context);
 
-  if (!context.mounted || choice == null) return;
+                        if (!context.mounted || choice == null) return;
 
-  if (choice == BookingChoice.create) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateEventPage(),
-      ),
-    );
-    return;
-  }
+                        if (choice == BookingChoice.create) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateEventPage(),
+                            ),
+                          );
+                          return;
+                        }
 
-  final selectedEvent = await Navigator.push<EventItem>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const SelectEventForBookingPage(),
-    ),
-  );
+                        final selectedEvent = await Navigator.push<EventItem>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SelectEventForBookingPage(),
+                          ),
+                        );
 
-  if (!context.mounted || selectedEvent == null) return;
+                        if (!context.mounted || selectedEvent == null) return;
 
-  await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EventBookingsDetailsPage(
-        eventId: selectedEvent.id,
-        addServiceId: service.id,
-      ),
-    ),
-  );
-},
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EventBookingsDetailsPage(
+                              eventId: selectedEvent.id,
+                              addServiceId: service.id,
+                            ),
+                          ),
+                        );
+                      },
                       child: const Text("Book Now"),
                     ),
                   ),
@@ -990,13 +1035,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
 
 class _WholeServiceCard extends StatelessWidget {
   final bool isSelected;
-  final double? price;
+  final double? originalPrice;
+  final double? finalPrice;
+  final double? percentOff;
   final bool enabled;
   final VoidCallback onTap;
 
   const _WholeServiceCard({
     required this.isSelected,
-    required this.price,
+    this.originalPrice,
+    this.finalPrice,
+    this.percentOff,
     required this.enabled,
     required this.onTap,
   });
@@ -1045,14 +1094,11 @@ class _WholeServiceCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (price != null)
-                  Text(
-                    "\$${price!.toStringAsFixed(0)}",
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppColors.gold,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                PriceTag(
+                  originalPrice: originalPrice,
+                  finalPrice: finalPrice,
+                  percentOff: percentOff,
+                ),
               ],
             ),
           ),

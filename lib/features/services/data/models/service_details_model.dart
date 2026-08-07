@@ -1,3 +1,5 @@
+import 'package:eventy_customer/features/services/data/models/discount_model.dart';
+
 class ServiceDetailsResponseModel {
   final bool success;
   final int statusCode;
@@ -46,14 +48,19 @@ class ServiceDetailsModel {
   final List<AvailabilityModel> availability;
   final List<SubServiceModel> subServices;
   final ProviderModel provider;
+
   final List<EventTypeModel> eventTypes;
   final MetaModel meta;
 
   /// ⚠️ جديد من الباك اند — اختياريين حاليًا
   final String? priceType;
   final String? packageId;
-
   final List<PackageServiceModel>? packageServices;
+
+  final double? originalPrice;
+  final double? finalPrice;
+  final double discountAmount;
+  final DiscountModel? discount;
 
   ServiceDetailsModel({
     required this.id,
@@ -85,6 +92,10 @@ class ServiceDetailsModel {
     this.priceType,
     this.packageId,
     this.packageServices,
+    this.originalPrice,
+    this.finalPrice,
+    this.discountAmount = 0,
+    this.discount,
   });
 
   factory ServiceDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -109,32 +120,50 @@ class ServiceDetailsModel {
       createdAt: DateTime.parse(json["createdAt"]),
       updatedAt: DateTime.parse(json["updatedAt"]),
       serviceType: ServiceTypeInfo.fromJson(json["serviceType"]),
-      files: (json["files"] as List? ?? []).map((e) => ServiceFile.fromJson(e)).toList(),
-      availability:
-          (json["availability"] as List? ?? []).map((e) => AvailabilityModel.fromJson(e)).toList(),
-      subServices: (json["subServices"] as List? ?? []).map((e) => SubServiceModel.fromJson(e)).toList(),
+      files: (json["files"] as List? ?? [])
+          .map((e) => ServiceFile.fromJson(e))
+          .toList(),
+      availability: (json["availability"] as List? ?? [])
+          .map((e) => AvailabilityModel.fromJson(e))
+          .toList(),
+      subServices: (json["subServices"] as List? ?? [])
+          .map((e) => SubServiceModel.fromJson(e))
+          .toList(),
       provider: ProviderModel.fromJson(json["provider"]),
-      eventTypes: (json["eventTypes"] as List? ?? []).map((e) => EventTypeModel.fromJson(e)).toList(),
+      eventTypes: (json["eventTypes"] as List? ?? [])
+          .map((e) => EventTypeModel.fromJson(e))
+          .toList(),
       meta: MetaModel.fromJson(json["meta"]),
       priceType: json["priceType"],
       packageId: json["packageId"],
       packageServices: json["packageServices"] != null
-          ? (json["packageServices"] as List).map((e) => PackageServiceModel.fromJson(e)).toList()
+          ? (json["packageServices"] as List)
+                .map((e) => PackageServiceModel.fromJson(e))
+                .toList()
+          : null,
+
+      originalPrice: json["originalPrice"]?.toDouble(),
+      finalPrice: json["finalPrice"]?.toDouble(),
+      discountAmount: (json["discountAmount"] ?? 0).toDouble(),
+      discount: json["discount"] != null
+          ? DiscountModel.fromJson(json["discount"])
           : null,
     );
   }
-
+  bool get hasDiscount => discount != null;
   bool get hasImages => files.isNotEmpty;
   String? get mainImage => files.isNotEmpty ? files.first.fileUrl : null;
   bool get hasPrice => price != null;
-  bool get hasLocation => locationName != null && locationName!.trim().isNotEmpty;
+  bool get hasLocation =>
+      locationName != null && locationName!.trim().isNotEmpty;
   bool get hasCapacity => minCapacity != null || maxCapacity != null;
   bool get isActive => approvalStatus.toUpperCase() == "ACTIVE";
   bool get hasPackageServices =>
       isPackaged && packageServices != null && packageServices!.isNotEmpty;
 
   /// ⚠️ جديد: هل توجد Time Slots فعلية يجب على المستخدم اختيار واحد منها
-  bool get hasTimeSlots => availability.any((a) => a.hasSlots && a.timeSlots.isNotEmpty);
+  bool get hasTimeSlots =>
+      availability.any((a) => a.hasSlots && a.timeSlots.isNotEmpty);
 
   /// ⚠️ جديد: يُستخدم فقط عند تمرير date للـ API — إذا رجع availability فاضي
   /// أو الـ hasSlots صحيح لكن بدون أي slot لهذا اليوم = غير متوفر بهذا التاريخ
@@ -144,7 +173,8 @@ class ServiceDetailsModel {
   }
 
   String get capacityLabel {
-    if (minCapacity != null && maxCapacity != null) return "$minCapacity – $maxCapacity guests";
+    if (minCapacity != null && maxCapacity != null)
+      return "$minCapacity – $maxCapacity guests";
     if (maxCapacity != null) return "Up to $maxCapacity guests";
     if (minCapacity != null) return "From $minCapacity guests";
     return "";
@@ -156,7 +186,8 @@ class ServiceDetailsModel {
 class ServiceTypeInfo {
   final String name;
   ServiceTypeInfo({required this.name});
-  factory ServiceTypeInfo.fromJson(Map<String, dynamic> json) => ServiceTypeInfo(name: json["name"]);
+  factory ServiceTypeInfo.fromJson(Map<String, dynamic> json) =>
+      ServiceTypeInfo(name: json["name"]);
 }
 
 enum ServiceFileType { image, video, unknown }
@@ -167,7 +198,12 @@ class ServiceFile {
   final ServiceFileType fileType;
   final String? publicId;
 
-  ServiceFile({required this.id, required this.fileUrl, required this.fileType, this.publicId});
+  ServiceFile({
+    required this.id,
+    required this.fileUrl,
+    required this.fileType,
+    this.publicId,
+  });
 
   factory ServiceFile.fromJson(Map<String, dynamic> json) {
     return ServiceFile(
@@ -219,8 +255,12 @@ class AvailabilityModel {
       workToTime: json["workToTime"],
       capacity: json["capacity"] ?? 0,
       hasSlots: json["hasSlots"] ?? false,
-      workingDays: (json["workingDays"] as List).map((e) => WorkingDayModel.fromJson(e)).toList(),
-      timeSlots: (json["timeSlots"] as List).map((e) => TimeSlotModel.fromJson(e)).toList(),
+      workingDays: (json["workingDays"] as List)
+          .map((e) => WorkingDayModel.fromJson(e))
+          .toList(),
+      timeSlots: (json["timeSlots"] as List)
+          .map((e) => TimeSlotModel.fromJson(e))
+          .toList(),
     );
   }
 }
@@ -228,7 +268,8 @@ class AvailabilityModel {
 class WorkingDayModel {
   final String dayOfWeek;
   WorkingDayModel({required this.dayOfWeek});
-  factory WorkingDayModel.fromJson(Map<String, dynamic> json) => WorkingDayModel(dayOfWeek: json["dayOfWeek"]);
+  factory WorkingDayModel.fromJson(Map<String, dynamic> json) =>
+      WorkingDayModel(dayOfWeek: json["dayOfWeek"]);
 }
 
 class TimeSlotModel {
@@ -237,7 +278,12 @@ class TimeSlotModel {
   final String toTime;
   final int capacity;
 
-  TimeSlotModel({required this.id, required this.fromTime, required this.toTime, required this.capacity});
+  TimeSlotModel({
+    required this.id,
+    required this.fromTime,
+    required this.toTime,
+    required this.capacity,
+  });
 
   factory TimeSlotModel.fromJson(Map<String, dynamic> json) {
     return TimeSlotModel(
@@ -257,7 +303,11 @@ class SubServiceMedia {
   SubServiceMedia({required this.id, required this.url, required this.type});
 
   factory SubServiceMedia.fromJson(Map<String, dynamic> json) {
-    return SubServiceMedia(id: json["id"] ?? "", url: json["url"] ?? "", type: ServiceFile._parseType(json["type"]));
+    return SubServiceMedia(
+      id: json["id"] ?? "",
+      url: json["url"] ?? "",
+      type: ServiceFile._parseType(json["type"]),
+    );
   }
 }
 
@@ -274,6 +324,11 @@ class SubServiceModel {
   /// ⚠️ جديد من الباك اند — اختياري
   final String? approvalStatus;
 
+  final double? originalPrice;
+  final double? finalPrice;
+  final double discountAmount;
+  final DiscountModel? discount;
+
   SubServiceModel({
     required this.id,
     required this.name,
@@ -284,6 +339,11 @@ class SubServiceModel {
     required this.isAvailable,
     required this.media,
     this.approvalStatus,
+
+    this.originalPrice,
+    this.finalPrice,
+    this.discountAmount = 0,
+    this.discount,
   });
 
   factory SubServiceModel.fromJson(Map<String, dynamic> json) {
@@ -295,11 +355,19 @@ class SubServiceModel {
       unitType: json["unitType"] ?? "",
       dailyCapacity: json["dailyCapacity"] ?? 0,
       isAvailable: json["isAvailable"] ?? false,
-      media: (json["media"] as List? ?? []).map((e) => SubServiceMedia.fromJson(e)).toList(),
+      media: (json["media"] as List? ?? [])
+          .map((e) => SubServiceMedia.fromJson(e))
+          .toList(),
       approvalStatus: json["approvalStatus"],
+      originalPrice: json["originalPrice"]?.toDouble(),
+      finalPrice: json["finalPrice"]?.toDouble(),
+      discountAmount: (json["discountAmount"] ?? 0).toDouble(),
+      discount: json["discount"] != null
+          ? DiscountModel.fromJson(json["discount"])
+          : null,
     );
   }
-
+  bool get hasDiscount => discount != null && discountAmount > 0;
   String? get thumbnailUrl => media.isNotEmpty ? media.first.url : null;
 }
 
@@ -355,7 +423,8 @@ class ProviderUserModel {
 class EventTypeModel {
   final String eventType;
   EventTypeModel({required this.eventType});
-  factory EventTypeModel.fromJson(Map<String, dynamic> json) => EventTypeModel(eventType: json["eventType"]);
+  factory EventTypeModel.fromJson(Map<String, dynamic> json) =>
+      EventTypeModel(eventType: json["eventType"]);
 }
 
 class MetaModel {
@@ -376,7 +445,12 @@ class PaginationModel {
   final int limit;
   final int totalPages;
 
-  PaginationModel({required this.total, required this.page, required this.limit, required this.totalPages});
+  PaginationModel({
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
 
   factory PaginationModel.fromJson(Map<String, dynamic> json) {
     return PaginationModel(
@@ -408,7 +482,8 @@ class PackageServiceModel {
       id: json["id"] ?? "",
       name: json["name"] ?? json["businessName"] ?? "",
       logo: json["logo"] ?? json["serviceLogo"],
-      serviceTypeName: json["serviceType"]?["name"] ?? json["serviceTypeName"] ?? "",
+      serviceTypeName:
+          json["serviceType"]?["name"] ?? json["serviceTypeName"] ?? "",
       fromPrice: json["price"]?.toDouble(),
     );
   }

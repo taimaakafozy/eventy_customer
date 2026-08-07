@@ -1,7 +1,9 @@
 class SelectedSubService {
   final String id;
   final String name;
-  final double pricePerUnit;
+  final double pricePerUnit; // ⚠️ الآن هذا هو السعر النهائي (بعد الخصم)
+  final double? originalPricePerUnit; // موجود فقط عند وجود خصم فعلي
+  final double? percentOff;
   final String unitType;
   final int quantity;
 
@@ -9,15 +11,21 @@ class SelectedSubService {
     required this.id,
     required this.name,
     required this.pricePerUnit,
+    this.originalPricePerUnit,
+    this.percentOff,
     required this.unitType,
     required this.quantity,
   });
+
+  bool get hasDiscount => originalPricePerUnit != null && originalPricePerUnit! > pricePerUnit;
 
   SelectedSubService copyWith({int? quantity}) {
     return SelectedSubService(
       id: id,
       name: name,
       pricePerUnit: pricePerUnit,
+      originalPricePerUnit: originalPricePerUnit,
+      percentOff: percentOff,
       unitType: unitType,
       quantity: quantity ?? this.quantity,
     );
@@ -29,12 +37,10 @@ class SelectedService {
   final String serviceName;
   final Map<String, SelectedSubService> subServices;
 
-  /// خدمات بدون Sub-Services (Hall/Sound) — وجود قيمة هنا يعني اختيار الخدمة كاملة
-  final double? wholeServicePrice;
+  final double? wholeServicePrice; // نهائي
+  final double? wholeServiceOriginalPrice;
+  final double? wholeServicePercentOff;
 
-  /// ⚠️ أُعيدت إضافته: مطلوب من الباك اند فقط للخدمات التي تعتمد Time Slots
-  /// (hasSlots = true) — يُحسب تلقائيًا بمطابقة وقت المناسبة مع الفتحات المتاحة،
-  /// المستخدم لا يختاره يدويًا إطلاقًا.
   final String? timeSlotId;
 
   const SelectedService({
@@ -42,6 +48,8 @@ class SelectedService {
     required this.serviceName,
     required this.subServices,
     this.wholeServicePrice,
+    this.wholeServiceOriginalPrice,
+    this.wholeServicePercentOff,
     this.timeSlotId,
   });
 
@@ -55,6 +63,8 @@ class SelectedService {
       serviceName: serviceName,
       subServices: subServices ?? this.subServices,
       wholeServicePrice: wholeServicePrice ?? this.wholeServicePrice,
+      wholeServiceOriginalPrice: wholeServiceOriginalPrice,
+      wholeServicePercentOff: wholeServicePercentOff,
       timeSlotId: timeSlotId ?? this.timeSlotId,
     );
   }

@@ -1,3 +1,4 @@
+
 class CreateEventRequest {
   final String name;
   final String eventType;
@@ -138,6 +139,10 @@ class CreatedBooking {
   final String status;
   final List<CreatedBookingItem> items;
 
+  /// ⚠️ حقول جديدة — مسطّحة كما بالـ Response الفعلي (بدون object متداخل)
+  final double discountAmount;
+  final DateTime? cancellationDeadline;
+
   CreatedBooking({
     required this.id,
     required this.serviceId,
@@ -145,6 +150,8 @@ class CreatedBooking {
     required this.totalAmount,
     required this.status,
     required this.items,
+    this.discountAmount = 0,
+    this.cancellationDeadline,
   });
 
   factory CreatedBooking.fromJson(Map<String, dynamic> json) {
@@ -155,8 +162,16 @@ class CreatedBooking {
       totalAmount: (json["totalAmount"] as num).toDouble(),
       status: json["status"],
       items: (json["items"] as List).map((e) => CreatedBookingItem.fromJson(e)).toList(),
+      discountAmount: (json["discountAmount"] ?? 0).toDouble(),
+      cancellationDeadline:
+          json["cancellationDeadline"] != null ? DateTime.tryParse(json["cancellationDeadline"]) : null,
     );
   }
+
+  bool get hasDiscount => discountAmount > 0;
+
+  /// المبلغ الفعلي المستحق بعد خصم قيمة الخصم من الإجمالي الأصلي
+  double get discountedTotal => totalAmount - discountAmount;
 }
 
 class CreatedBookingItem {

@@ -9,7 +9,9 @@ class EventBuilderCubit extends Cubit<Map<String, SelectedService>> {
     required String serviceName,
     required String subServiceId,
     required String subServiceName,
-    required double pricePerUnit,
+    required double pricePerUnit, // ⚠️ يُمرَّر الآن كـ finalPrice
+    double? originalPricePerUnit,
+    double? percentOff,
     required String unitType,
     String? timeSlotId,
     int initialQty = 1,
@@ -26,6 +28,8 @@ class EventBuilderCubit extends Cubit<Map<String, SelectedService>> {
         id: subServiceId,
         name: subServiceName,
         pricePerUnit: pricePerUnit,
+        originalPricePerUnit: originalPricePerUnit,
+        percentOff: percentOff,
         unitType: unitType,
         quantity: initialQty,
       );
@@ -47,7 +51,6 @@ class EventBuilderCubit extends Cubit<Map<String, SelectedService>> {
 
   void setQuantity(String serviceId, String subServiceId, int quantity) {
     if (quantity < 1) return;
-
     final service = state[serviceId];
     if (service == null || !service.subServices.containsKey(subServiceId)) return;
 
@@ -59,11 +62,12 @@ class EventBuilderCubit extends Cubit<Map<String, SelectedService>> {
     emit(updated);
   }
 
-  /// للخدمات بدون Sub-Services — اختيار/إلغاء الخدمة كاملة مباشرة
   void toggleWholeService({
     required String serviceId,
     required String serviceName,
-    required double price,
+    required double price, // ⚠️ finalPrice
+    double? originalPrice,
+    double? percentOff,
     String? timeSlotId,
   }) {
     final updated = _cloneState();
@@ -76,6 +80,8 @@ class EventBuilderCubit extends Cubit<Map<String, SelectedService>> {
         serviceName: serviceName,
         subServices: const {},
         wholeServicePrice: price,
+        wholeServiceOriginalPrice: originalPrice,
+        wholeServicePercentOff: percentOff,
         timeSlotId: timeSlotId,
       );
     }

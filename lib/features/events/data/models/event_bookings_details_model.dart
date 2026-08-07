@@ -1,3 +1,5 @@
+import 'package:eventy_customer/features/services/data/models/discount_model.dart';
+
 class EventBookingsDetailsResponseModel {
   final EventBookingsDetailsModel data;
 
@@ -82,6 +84,8 @@ class BookingDetailModel {
   final BookingProviderModel provider;
   final List<BookingItemModel> items;
   final BookingPaymentModel? payment;
+   final BookingDiscountModel? discount;
+
 
   BookingDetailModel({
     required this.id,
@@ -96,6 +100,7 @@ class BookingDetailModel {
     required this.provider,
     required this.items,
     this.payment,
+    this.discount,
   });
 
   factory BookingDetailModel.fromJson(Map<String, dynamic> json) {
@@ -113,6 +118,8 @@ class BookingDetailModel {
       provider: BookingProviderModel.fromJson(json['provider'] ?? {}),
       items: (json['items'] as List<dynamic>? ?? []).map((e) => BookingItemModel.fromJson(e)).toList(),
       payment: json['payment'] != null ? BookingPaymentModel.fromJson(json['payment']) : null,
+      discount: json['discount'] != null ? BookingDiscountModel.fromJson(json['discount']) : null,
+
     );
   }
 

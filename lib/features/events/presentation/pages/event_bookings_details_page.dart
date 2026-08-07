@@ -25,18 +25,22 @@ class EventBookingsDetailsPage extends StatelessWidget {
   final String eventId;
   final String? addServiceId;
 
-  const EventBookingsDetailsPage({super.key, required this.eventId,this.addServiceId});
+  const EventBookingsDetailsPage({
+    super.key,
+    required this.eventId,
+    this.addServiceId,
+  });
 
   @override
   Widget build(BuildContext context) {
-     debugPrint("EVENT DETAILS PAGE");
+    debugPrint("EVENT DETAILS PAGE");
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => sl<EventBookingsDetailsCubit>(param1: eventId)..load()),
-        BlocProvider(create: (_) => sl<QuoteDecisionCubit>(param1: eventId)),
         BlocProvider(
-  create: (_) => sl<CancelEventCubit>(),
-),
+          create: (_) => sl<EventBookingsDetailsCubit>(param1: eventId)..load(),
+        ),
+        BlocProvider(create: (_) => sl<QuoteDecisionCubit>(param1: eventId)),
+        BlocProvider(create: (_) => sl<CancelEventCubit>()),
       ],
       child: _EventBookingsView(addServiceId: addServiceId),
     );
@@ -81,67 +85,68 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
     });
   }
 
-  Future<void> _openAddService(BuildContext context, EventBookingsDetailsModel details) async {
-  final added = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
-          BlocProvider(create: (_) => sl<AddServiceToEventCubit>()),
-          BlocProvider(
-  create: (_) => sl<CancelEventCubit>(),
-),
-        ],
-        child: ServiceDetailsPage(
-          serviceId: widget.addServiceId!,
-          selectable: true,
-          addToEventId: details.id,
-          addToEventName: details.name,
-          eventDate: details.eventDate,
-          eventStartTime: details.eventStartTime,
-          eventEndTime: details.eventEndTime,
-          eventGuests: details.numberOfGuests,
+  Future<void> _openAddService(
+    BuildContext context,
+    EventBookingsDetailsModel details,
+  ) async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => sl<ServiceDetailsCubit>()),
+            BlocProvider(create: (_) => sl<AddServiceToEventCubit>()),
+            BlocProvider(create: (_) => sl<CancelEventCubit>()),
+          ],
+          child: ServiceDetailsPage(
+            serviceId: widget.addServiceId!,
+            selectable: true,
+            addToEventId: details.id,
+            addToEventName: details.name,
+            eventDate: details.eventDate,
+            eventStartTime: details.eventStartTime,
+            eventEndTime: details.eventEndTime,
+            eventGuests: details.numberOfGuests,
+          ),
         ),
       ),
-    ),
-  );
+    );
 
-  if (added == true && context.mounted) {
-    context.read<EventBookingsDetailsCubit>().load();
+    if (added == true && context.mounted) {
+      context.read<EventBookingsDetailsCubit>().load();
+    }
   }
-}
 
   Future<void> _showCancelDialog(String eventId) async {
     final reasonController = TextEditingController();
     showDialog(
-  context: context,
-  builder: (_) => AppConfirmationDialog(
-    title: "Cancel Event",
-    message: "Are you sure?",
-    confirmText: "Cancel Event",
-    icon: Icons.cancel_rounded,
-    iconColor: AppColors.error,
-    confirmColor: AppColors.error,
-    content: TextField(
-  controller: reasonController,
-  maxLines: 3,
-  textInputAction: TextInputAction.done,
-  decoration: const InputDecoration(
-    labelText: "Reason",
-    hintText: "Cancellation reason",
-  ),
-),
-    onConfirm: () {
-      context.read<CancelEventCubit>().cancelEvent(
-              eventId: eventId,
-              reason: CancelEventRequestModel(
-                reason: reasonController.text.trim(),
-              ),
-            );
-    },
-  ),
-);
+      context: context,
+      builder: (_) => AppConfirmationDialog(
+        title: "Cancel Event",
+        message: "Are you sure?",
+        confirmText: "Cancel Event",
+        icon: Icons.cancel_rounded,
+        iconColor: AppColors.error,
+        confirmColor: AppColors.error,
+        content: TextField(
+          controller: reasonController,
+          maxLines: 3,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: "Reason",
+            hintText: "Cancellation reason",
+          ),
+        ),
+        onConfirm: () {
+          context.read<CancelEventCubit>().cancelEvent(
+            eventId: eventId,
+            reason: CancelEventRequestModel(
+              reason: reasonController.text.trim(),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _rejectAll(EventBookingsDetailsModel details) async {
@@ -255,17 +260,18 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
 
     return Scaffold(
       floatingActionButton: widget.addServiceId == null
-    ? null
-    : BlocBuilder<EventBookingsDetailsCubit, EventBookingsDetailsState>(
-        builder: (context, state) {
-          if (state is! EventBookingsDetailsLoaded) return const SizedBox();
-          return FloatingActionButton.extended(
-            onPressed: () => _openAddService(context, state.details),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text("Add Service"),
-          );
-        },
-      ),
+          ? null
+          : BlocBuilder<EventBookingsDetailsCubit, EventBookingsDetailsState>(
+              builder: (context, state) {
+                if (state is! EventBookingsDetailsLoaded)
+                  return const SizedBox();
+                return FloatingActionButton.extended(
+                  onPressed: () => _openAddService(context, state.details),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text("Add Service"),
+                );
+              },
+            ),
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: const Text("Event Bookings")),
 
@@ -304,19 +310,19 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
 
           BlocListener<CancelEventCubit, CancelEventState>(
             listener: (context, state) {
-             if (state is CancelEventSuccess) {
-  showAppSnackBar(
-    context,
-    message: state.message,
-    type: SnackBarType.success,
-  );
+              if (state is CancelEventSuccess) {
+                showAppSnackBar(
+                  context,
+                  message: state.message,
+                  type: SnackBarType.success,
+                );
 
-  sl<GetAllEventsCubit>().refresh();
+                sl<GetAllEventsCubit>().refresh();
 
-  context.read<EventBookingsDetailsCubit>().load();
+                context.read<EventBookingsDetailsCubit>().load();
 
-  context.read<CancelEventCubit>().reset();
-}
+                context.read<CancelEventCubit>().reset();
+              }
 
               if (state is CancelEventError) {
                 showAppSnackBar(
@@ -358,9 +364,8 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
             }
 
             final details = (state as EventBookingsDetailsLoaded).details;
-final canCancel =
-    details.status != "CANCELLED" &&
-    details.status != "COMPLETED";
+            final canCancel =
+                details.status != "CANCELLED" && details.status != "COMPLETED";
             return RefreshIndicator(
               onRefresh: () => context.read<EventBookingsDetailsCubit>().load(),
               child: ListView(
@@ -683,15 +688,53 @@ class _BookingCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                "\$${booking.displayAmount.toStringAsFixed(0)}",
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (booking.discount != null)
+                    Text(
+                      "\$${booking.totalAmount.toStringAsFixed(0)}",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(.4),
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  Text(
+                    "\$${booking.displayAmount.toStringAsFixed(0)}",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+          if (booking.discount != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "Saved \$${booking.discount!.amount.toStringAsFixed(0)} (${booking.discount!.percentOff.toStringAsFixed(0)}% off)",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (isActionable) ...[
             const SizedBox(height: 12),
             Row(

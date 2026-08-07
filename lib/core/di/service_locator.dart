@@ -186,11 +186,9 @@ sl.registerFactory<UserProfileCubit>(
     () => GetServiceTypesUseCase(sl()),
   );
 
-  sl.registerLazySingleton<ServiceTypesCubit>(
-    () => ServiceTypesCubit(
-      sl(),
-    ),
-  );
+  sl.registerFactory<ServiceTypesCubit>(
+  () => ServiceTypesCubit(sl()),
+);
 
   sl.registerLazySingleton<GetAvailableServicesUseCase>(
   () => GetAvailableServicesUseCase(sl()),

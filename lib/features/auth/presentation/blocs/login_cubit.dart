@@ -14,48 +14,22 @@ class LoginCubit extends Cubit<LoginState> {
     this.storage,
   ) : super(LoginInitial());
 
-  Future<void> login(
-    String email,
-    String password,
-  ) async {
-    emit(LoginLoading());
+ Future<void> login(String email, String password) async {
+  emit(LoginLoading());
 
-    try {
-      final result = await loginUseCase(
-        email,
-        password,
-      );
+  try {
+    final result = await loginUseCase(email, password);
+    final accessToken = result['accessToken'] as String;
+    final refreshToken = result['refreshToken'] as String;
 
-      final accessToken =
-          result['accessToken'] as String;
+    await storage.saveToken(accessToken);
+    await storage.saveRefreshToken(refreshToken);
 
-      final refreshToken =
-          result['refreshToken'] as String;
+    emit(LoginSuccess(accessToken));
+  } catch (e) {
+    emit(LoginError(e.toString().replaceFirst('Exception: ', '')));
+    print(e.toString());
+  }
 
-      await storage.saveToken(
-        accessToken,
-      );
-
-      await storage.saveRefreshToken(
-        refreshToken,
-      );
-
-      emit(
-        LoginSuccess(
-          accessToken,
-        ),
-      );
-    } catch (e) {
-      emit(
-        LoginError(
-          e.toString().replaceAll(
-            'Exception: ',
-            '',
-          ),
-        ),
-      );
-
-      print(e.toString());
-    }
   }
 }
