@@ -12,6 +12,7 @@ import 'package:eventy_customer/features/events/presentation/blocs/event_builder
 import 'package:eventy_customer/features/events/presentation/pages/create_event_page.dart';
 import 'package:eventy_customer/features/events/presentation/pages/event_bookings_details_page.dart';
 import 'package:eventy_customer/features/events/presentation/pages/select_event_for_booking_page.dart';
+import 'package:eventy_customer/features/reviews/presentation/widgets/reviews_section.dart';
 import 'package:eventy_customer/features/services/data/models/service_details_model.dart';
 import 'package:eventy_customer/features/services/domain/validators/service_time_matcher.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
@@ -885,6 +886,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                               ),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 34),
+                        ReviewsSection(
+                          serviceId: service.id,
+                          averageRating: service.rating,
+                          totalReviews: service.totalReviews,
                         ),
                         const SizedBox(height: 100),
                       ],

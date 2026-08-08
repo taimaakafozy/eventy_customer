@@ -55,7 +55,7 @@ void initState() {
 
   sl<FavoriteStatusCubit>().loadFavoriteIds();
 
-  // sl<ServiceTypesCubit>().getServiceTypes();
+  // sl<ServiceTypesCubit>().getServiceTypes(); 
 }
 
   @override

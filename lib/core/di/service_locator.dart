@@ -44,6 +44,15 @@ import 'package:eventy_customer/features/favorites/domain/usecases/get_favorites
 import 'package:eventy_customer/features/favorites/domain/usecases/remove_from_favorite_usecase.dart';
 import 'package:eventy_customer/features/favorites/presentation/blocs/favorite_status/favorite_status_cubit.dart';
 import 'package:eventy_customer/features/favorites/presentation/blocs/favorites_list/favorites_list_cubit.dart';
+import 'package:eventy_customer/features/reviews/data/datasources/review_remote_data_source.dart';
+import 'package:eventy_customer/features/reviews/data/repositories/review_repository_impl.dart';
+import 'package:eventy_customer/features/reviews/domain/repositories/review_repository.dart';
+import 'package:eventy_customer/features/reviews/domain/usecases/create_review_usecase.dart';
+import 'package:eventy_customer/features/reviews/domain/usecases/get_my_review_usecase.dart';
+import 'package:eventy_customer/features/reviews/domain/usecases/get_service_reviews_usecase.dart';
+import 'package:eventy_customer/features/reviews/presentation/blocs/create_review/create_review_cubit.dart';
+import 'package:eventy_customer/features/reviews/presentation/blocs/my_review/my_review_cubit.dart';
+import 'package:eventy_customer/features/reviews/presentation/blocs/service_reviews/service_reviews_cubit.dart';
 import 'package:eventy_customer/features/services/data/datasources/service_remote_data_source.dart';
 import 'package:eventy_customer/features/services/data/repositories/service_repository_impl.dart';
 import 'package:eventy_customer/features/services/domain/repositories/service_repository.dart';
@@ -314,6 +323,24 @@ sl.registerLazySingleton(() => GetComplaintDetailsUseCase(sl()));
 sl.registerFactory<CreateComplaintCubit>(() => CreateComplaintCubit(sl()));
 sl.registerFactory<ComplaintsListCubit>(() => ComplaintsListCubit(sl()));
 sl.registerFactory<ComplaintDetailsCubit>(() => ComplaintDetailsCubit(sl()));
+
+
+/// Reviews
+sl.registerLazySingleton<ReviewRemoteDataSource>(
+  () => ReviewRemoteDataSourceImpl(sl()),
+);
+
+sl.registerLazySingleton<ReviewRepository>(
+  () => ReviewRepositoryImpl(sl()),
+);
+
+sl.registerLazySingleton(() => CreateReviewUseCase(sl()));
+sl.registerLazySingleton(() => GetServiceReviewsUseCase(sl()));
+sl.registerLazySingleton(() => GetMyReviewUseCase(sl()));
+
+sl.registerFactory<CreateReviewCubit>(() => CreateReviewCubit(sl()));
+sl.registerFactory<MyReviewCubit>(() => MyReviewCubit(sl()));
+sl.registerFactory<ServiceReviewsCubit>(() => ServiceReviewsCubit(sl()));
 
 }
 

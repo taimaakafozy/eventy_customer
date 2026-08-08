@@ -5,10 +5,7 @@ import 'package:flutter/material.dart';
 class AvailabilitySection extends StatelessWidget {
   final List<AvailabilityModel> availability;
 
-  const AvailabilitySection({
-    super.key,
-    required this.availability,
-  });
+  const AvailabilitySection({super.key, required this.availability});
 
   @override
   Widget build(BuildContext context) {
@@ -133,10 +130,7 @@ class AvailabilitySection extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          color: theme.primaryColor,
-                        ),
+                        Icon(Icons.schedule_rounded, color: theme.primaryColor),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(

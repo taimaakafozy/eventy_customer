@@ -16,6 +16,7 @@ import 'package:eventy_customer/features/events/presentation/blocs/quote_decisio
 import 'package:eventy_customer/features/events/presentation/blocs/quote_decision/quote_decision_state.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/booking_payment_qr.dart';
 import 'package:eventy_customer/features/events/presentation/widgets/payment_method_sheet.dart';
+import 'package:eventy_customer/features/reviews/presentation/pages/leave_review_page.dart';
 import 'package:eventy_customer/features/services/presentation/blocs/service_details/service_details_cubit.dart';
 import 'package:eventy_customer/features/services/presentation/pages/service_details_page.dart';
 import 'package:flutter/material.dart';
@@ -479,6 +480,17 @@ class _EventBookingsViewState extends State<_EventBookingsView> {
                       reasonController: _decisions[b.id] == false
                           ? _reasonControllerFor(b.id)
                           : null,
+                      onLeaveReview: b.status.toUpperCase() == "COMPLETED"
+                          ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LeaveReviewPage(
+                                  bookingId: b.id,
+                                  serviceName: b.provider.businessName,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                 ],
@@ -556,6 +568,7 @@ class _BookingCard extends StatelessWidget {
 
   /// ⚠️ جديد: يظهر فقط عند تحديد "رفض" لهذا الحجز تحديدًا
   final TextEditingController? reasonController;
+  final VoidCallback? onLeaveReview;
 
   const _BookingCard({
     required this.booking,
@@ -563,6 +576,7 @@ class _BookingCard extends StatelessWidget {
     this.onAccept,
     this.onReject,
     this.reasonController,
+    this.onLeaveReview,
   });
 
   @override
@@ -817,6 +831,19 @@ class _BookingCard extends StatelessWidget {
           if (booking.status.toUpperCase() == "CONFIRMED" &&
               booking.payment != null)
             BookingPaymentQr(payment: booking.payment!),
+
+          if (booking.status.toUpperCase() == "COMPLETED" &&
+              onLeaveReview != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onLeaveReview,
+                icon: const Icon(Icons.star_border_rounded, size: 18),
+                label: const Text("Leave a Review"),
+              ),
+            ),
+          ],
         ],
       ),
     );
